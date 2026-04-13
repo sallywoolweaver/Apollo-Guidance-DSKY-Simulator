@@ -120,6 +120,8 @@
 ## Notes on implementation honesty
 
 - The repository structure and Virtual AGC listing corpus were inspected before writing the simulation contracts.
+- Apollo source code, listings, and imported Apollo-derived program artifacts must remain untouched.
+- The project must adapt the emulator/app around Apollo artifacts rather than rewriting or cleaning them up.
 - This app does not claim instruction-level AGC reproduction.
 - The current native core is emulator-compatible in architecture, but it still loads rope excerpts rather than full Apollo rope binaries.
 - The current native compatibility layer intentionally isolates descent/gameplay approximations so they can be removed or replaced as stricter AGC execution becomes practical.

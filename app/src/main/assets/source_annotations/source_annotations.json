@@ -1,0 +1,89 @@
+{
+  "labels": {
+    "BURNBABY": {
+      "file": "Luminary099/BURN,_BABY,_BURN_--_MASTER_IGNITION_ROUTINE.agc",
+      "title": "BURN, BABY, BURN -- MASTER IGNITION ROUTINE",
+      "summary": "Master ignition entry used by several LM programs, including P63, during the span between pre-ignition checks and early burn execution.",
+      "commentExcerpt": "THE MASTER IGNITION ROUTINE IS DESIGNED FOR USE BY THE FOLLOWING LEM PROGRAMS:  P12, P40, P42, P61, P63.",
+      "commentBlock": "THE MASTER IGNITION ROUTINE IS DESIGNED FOR USE BY THE FOLLOWING LEM PROGRAMS:  P12, P40, P42, P61, P63.\nIT PERFORMS ALL FUNCTIONS IMMEDIATELY ASSOCIATED WITH APS OR DPS IGNITION:  IN PARTICULAR, EVERYTHING LYING\nBETWEEN THE PRE-IGNITION TIME CHECK -- ARE WE WITHIN 45 SECONDS OF TIG? -- AND TIG + 26 SECONDS, WHEN DPS\nPROGRAMS THROTTLE UP.\n\nVARIATIONS AMONG PROGRAMS ARE ACCOMODATED BY MEANS OF TABLES CONTAINING CONSTANTS (FOR AVEGEXIT, FOR\nWAITLIST, FOR PINBALL) AND TCF INSTRUCTIONS.  USERS PLACE THE ADRES OF THE HEAD OF THE APPROPRIATE TABLE\n(OF P61TABLE FOR P61LM, FOR EXAMPLE) IN ERASABLE REGISTER 'WHICH' (E4).  THE IGNITION ROUTINE THEN INDEXES BY\nWHICH TO OBTAIN OR EXECUTE THE PROPER TABLE ENTRY.  THE IGNITION ROUTINE IS INITIATED BY A TCF BURNBABY,\nTHROUGH BANKJUMP IF NECESSARY.  THERE IS NO RETURN.",
+      "tags": ["ignition", "burn", "lm", "p63"]
+    },
+    "CHARIN": {
+      "file": "Luminary099/PINBALL_GAME_BUTTONS_AND_LIGHTS.agc",
+      "title": "PINBALL GAME BUTTONS AND LIGHTS",
+      "summary": "Pinball is the keyboard/display program that mediates astronaut verb/noun interaction with the AGC.",
+      "commentExcerpt": "EACH DEPRESSION OF A KEYBOARD BUTTON ACTIVATES AN INTERRUPT KEYRUPT1 ... AND ENTERS AN EXECUTIVE REQUEST FOR THE KEYBOARD AND DISPLAY PROGRAM (AT 'CHARIN').",
+      "commentBlock": "THE KEYBOARD AND DISPLAY SYSTEM PROGRAM OPERATES UNDER EXECUTIVE\nCONTROL AND PROCESSES INFORMATION EXCHANGED BETWEEN THE AGC AND THE\nCOMPUTER OPERATOR.  THE INPUTS TO THE PROGRAM ARE FROM THE KEYBOARD,\nFROM INTERNAL PROGRAM, AND FROM THE UPLINK.\n\nTHE LANGUAGE OF COMMUNICATION WITH THE PROGRAM IS A PAIR OF WORDS\nKNOWN AS VERB AND NOUN.  EACH OF THESE IS REPRESENTED BY A 2 CHARACTER\nDECIMAL NUMBER.  THE VERB CODE INDICATES WHAT ACTION IS TO BE TAKEN, THE\nNOUN CODE INDICATES TO WHAT THIS ACTION IS APPLIED.\n\nEACH DEPRESSION OF A KEYBOARD BUTTON ACTIVATES AN INTERRUPT KEYRUPT1\nAND PLACES THE 5 BIT KEY CODE INTO CHANNEL 15.  KEYRUPT1 PLACES THE KEY\nCODE INTO MPAC, ENTERS AN EXECUTIVE REQUEST FOR THE KEYBOARD AND DISPLAY\nPROGRAM (AT 'CHARIN'), AND EXECUTES A RESUME.",
+      "tags": ["dsky", "keyboard", "pinball", "verb-noun"]
+    },
+    "NEWPHASE": {
+      "file": "Luminary099/LUNAR_LANDING_GUIDANCE_EQUATIONS.agc",
+      "title": "LUNAR LANDING GUIDANCE EQUATIONS",
+      "summary": "Flight-sequence tables dispatch guidance behavior by WCHPHASE and branch into later landing phases such as STARTP64.",
+      "commentExcerpt": "FLIGHT SEQUENCE TABLES ARE ARRANGED BY FUNCTION.   THEY ARE REFERENCED USING AS AN INDEX THE REGISTER WCHPHASE:",
+      "commentBlock": "LUNAR LANDING FLIGHT SEQUENCE TABLES\n\nFLIGHT SEQUENCE TABLES ARE ARRANGED BY FUNCTION.   THEY ARE REFERENCED USING AS AN INDEX THE REGISTER WCHPHASE:\n       WCHPHASE = -1 ---> IGNALG\n       WCHPHASE =  0 ---> BRAKQUAD\n       WCHPHASE =  1 ---> APPRQUAD\n       WCHPHASE =  2 ---> VERTICAL\n\nROUTINES FOR STARTING NEW GUIDANCE PHASES:\n       NEWPHASE           TCF      TTFINCR                               #  BRAKQUAD\n                           TCF      STARTP64                              #  APPRQUAD\n                           TCF      P65START                              #  VERTICAL",
+      "tags": ["guidance", "phase", "landing", "lm"]
+    },
+    "P63LM": {
+      "file": "Luminary099/THE_LUNAR_LANDING.agc",
+      "title": "THE LUNAR LANDING",
+      "summary": "P63 braking-phase setup initializes descent state, BURNBABY routing, and WCHPHASE for lunar landing.",
+      "commentExcerpt": "P63: THE LUNAR LANDING, BRAKING PHASE",
+      "commentBlock": "****************************************\nP63: THE LUNAR LANDING, BRAKING PHASE\n****************************************\n\nDO IMU STATUS CHECK ROUTINE R02\nINITIALIZE WHICH FOR BURNBABY\nINITIALIZE DVMON\nINITIALIZE WCHPHASE AND FLPASS0\nREMOVE TRACK-ENABLE DISCRETE.",
+      "tags": ["landing", "p63", "braking", "lm"]
+    },
+    "VARALARM": {
+      "file": "Luminary099/ALARM_AND_ABORT.agc",
+      "title": "ALARM AND ABORT",
+      "summary": "VARALARM is the program-alarm path that turns on the program alarm light without issuing a display.",
+      "commentExcerpt": "VARALARM TURNS ON PROGRAM ALARM LIGHT BUT DOES NOT DISPLAY",
+      "commentBlock": "CALLING SEQUENCE FOR VARALARM\n               CAF     (ALARM)\n               TC      VARALARM\n\nVARALARM TURNS ON PROGRAM ALARM LIGHT BUT DOES NOT DISPLAY\n\nVARALARM           INHINT\n\nTS       L                                      #  SAVE USERS ALARM CODE\nCA       Q                                      #  SAVE USERS Q\nTS       ALMCADR\nTC       PRIOENT\nOCT      14                                    #  DONT MOVE\nTC       ALMCADR                               #  RETURN TO USER",
+      "tags": ["alarm", "program-alarm", "lm", "120x"]
+    }
+  },
+  "files": {
+    "Luminary099/ALARM_AND_ABORT.agc": {
+      "title": "ALARM AND ABORT",
+      "headerComment": "ALARM and abort-related LM program handling. Initial curated annotations focus on the VARALARM comment block.",
+      "labels": ["VARALARM"]
+    },
+    "Luminary099/BURN,_BABY,_BURN_--_MASTER_IGNITION_ROUTINE.agc": {
+      "title": "BURN, BABY, BURN -- MASTER IGNITION ROUTINE",
+      "headerComment": "Master ignition routine for LM burn programs, including P63.",
+      "labels": ["BURNBABY"]
+    },
+    "Luminary099/LUNAR_LANDING_GUIDANCE_EQUATIONS.agc": {
+      "title": "LUNAR LANDING GUIDANCE EQUATIONS",
+      "headerComment": "Landing flight-sequence tables and phase-dispatch logic keyed by WCHPHASE.",
+      "labels": ["NEWPHASE"]
+    },
+    "Luminary099/PINBALL_GAME_BUTTONS_AND_LIGHTS.agc": {
+      "title": "PINBALL GAME BUTTONS AND LIGHTS",
+      "headerComment": "Keyboard and display program for verb/noun interaction, key interrupts, and operator-facing display flow.",
+      "labels": ["CHARIN"]
+    },
+    "Luminary099/THE_LUNAR_LANDING.agc": {
+      "title": "THE LUNAR LANDING",
+      "headerComment": "P63 braking-phase entry and lunar-landing setup.",
+      "labels": ["P63LM"]
+    }
+  },
+  "tags": {
+    "120x": ["VARALARM"],
+    "alarm": ["VARALARM"],
+    "braking": ["P63LM"],
+    "burn": ["BURNBABY"],
+    "display": [],
+    "dsky": ["CHARIN"],
+    "guidance": ["NEWPHASE"],
+    "ignition": ["BURNBABY"],
+    "keyboard": ["CHARIN"],
+    "landing": ["NEWPHASE", "P63LM"],
+    "lm": ["BURNBABY", "NEWPHASE", "P63LM", "VARALARM"],
+    "p63": ["BURNBABY", "P63LM"],
+    "phase": ["NEWPHASE"],
+    "pinball": ["CHARIN"],
+    "program-alarm": ["VARALARM"],
+    "verb-noun": ["CHARIN"]
+  }
+}

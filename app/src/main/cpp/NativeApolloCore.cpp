@@ -2,6 +2,7 @@
 
 #include "AgcCpu.h"
 #include "AgcMemoryImage.h"
+#include "AlarmExecutive.h"
 #include "CompatibilityScenario.h"
 #include "DskyIo.h"
 #include "ScenarioBootstrap.h"
@@ -50,11 +51,13 @@ NativeApolloCore::NativeApolloCore()
       memoryImage_(new AgcMemoryImage()),
       scenarioBootstrap_(new ScenarioBootstrap()),
       dskyIo_(new DskyIo()),
+      alarmExecutive_(new AlarmExecutive()),
       compatibilityScenario_(new CompatibilityScenario()) {}
 
 NativeApolloCore::~NativeApolloCore() {
     delete compatibilityScenario_;
     delete dskyIo_;
+    delete alarmExecutive_;
     delete scenarioBootstrap_;
     delete memoryImage_;
     delete cpu_;
@@ -66,6 +69,7 @@ void NativeApolloCore::initCore() {
     memoryImage_->initialize();
     scenarioBootstrap_->initialize();
     dskyIo_->initialize();
+    alarmExecutive_->initialize();
 }
 
 bool NativeApolloCore::loadProgramImage(const std::vector<uint8_t>& image) {
@@ -81,6 +85,7 @@ bool NativeApolloCore::loadProgramImage(const std::vector<uint8_t>& image) {
         return false;
     }
     cpu_->loadProgramContext(memoryImage_->metadata(), scenarioBootstrap_->data().requestedInitialProgram);
+    alarmExecutive_->reset();
     compatibilityScenario_->resetFromBootstrap(scenarioBootstrap_->data(), memoryImage_->metadata(), *cpu_, *dskyIo_);
     return true;
 }
@@ -91,6 +96,7 @@ void NativeApolloCore::resetScenario() {
         return;
     }
     memoryImage_->resetErasable();
+    alarmExecutive_->reset();
     compatibilityScenario_->resetFromBootstrap(scenarioBootstrap_->data(), memoryImage_->metadata(), *cpu_, *dskyIo_);
 }
 
@@ -113,6 +119,7 @@ void NativeApolloCore::stepSimulation(double deltaSeconds) {
         return;
     }
     compatibilityScenario_->step(deltaSeconds, *memoryImage_, *cpu_, *dskyIo_);
+    alarmExecutive_->update(*cpu_, *dskyIo_);
     dskyIo_->syncProgramFromCpu(*cpu_);
     dskyIo_->syncExecutionFromCpu(*cpu_, *memoryImage_);
 }

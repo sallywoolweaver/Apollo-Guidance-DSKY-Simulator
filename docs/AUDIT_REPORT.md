@@ -14,6 +14,12 @@
   - source-annotation asset and browser
   - curated mapping layer for Engineer Mode
 
+## Apollo Artifact Rule
+
+- Apollo source code, listings, and imported Apollo-derived program artifacts must remain untouched.
+- The project must not rewrite, normalize, patch, paraphrase, or "improve" Apollo code.
+- The correct direction is to adapt emulator, peripheral, JNI, and UI layers around those artifacts.
+
 ## What the current app truly is
 
 - It is not a strict AGC emulator.
@@ -215,11 +221,12 @@
 
 ## What must change to get closer to a strict emulator-backed build
 
-1. Replace config-style program loading with real assembled AGC image loading.
-2. Move runtime ownership from `CompatibilityScenario` into emulator/peripheral state.
-3. Make DSKY behavior increasingly peripheral-driven rather than custom UI-state-driven.
-4. Derive snapshot fields from emulator state wherever possible.
-5. Restrict the compatibility layer to:
+1. Import fuller Apollo artifacts as read-only historical material without modifying them.
+2. Replace config-style program loading with real assembled AGC image loading.
+3. Move runtime ownership from `CompatibilityScenario` into emulator/peripheral state.
+4. Make DSKY behavior increasingly peripheral-driven rather than custom UI-state-driven.
+5. Derive snapshot fields from emulator state wherever possible.
+6. Restrict the compatibility layer to:
    - scenario bootstrap
    - UI-friendly derived values
    - non-AGC mission/game framing that genuinely cannot come from the emulator

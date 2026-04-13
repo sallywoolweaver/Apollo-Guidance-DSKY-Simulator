@@ -8,6 +8,7 @@ project("myapplication")
 add_library(
     myapplication
     SHARED
+    AlarmExecutive.cpp
     AgcCpu.cpp
     AgcMemoryImage.cpp
     CompatibilityScenario.cpp

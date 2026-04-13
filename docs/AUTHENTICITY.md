@@ -1,5 +1,11 @@
 # Authenticity Boundaries
 
+## Apollo Artifact Rule
+
+- Apollo source code, listings, and imported Apollo-derived program artifacts must remain untouched.
+- The project must not rewrite, normalize, patch, paraphrase, or "improve" Apollo code.
+- Authenticity gains must come from better emulator/peripheral execution around Apollo artifacts, not from rewriting those artifacts into app-owned logic.
+
 ## Exact reproductions in this slice
 
 - Apollo program-number framing for `P63`, `P64`, `P66`, and `P68`.
@@ -63,10 +69,14 @@
   - DSKY display-mode effects for `V16 N68`, `V06 N63/N64/N60`, `V05 N09`
   - `PRO`, `RSET`, `KEY REL`, and verb/noun entry handling
   - DSKY `COMP ACTY` annunciation during Luminary099 rope execution
+  - DSKY `OPR ERR` annunciation when native CPU execution reaches unsupported Apollo-derived opcode classes
+  - 1201 / 1202 alarm ownership and alarm-display gating through `AlarmExecutive`
 - Derived from emulator state now:
   - major-mode ownership via `AgcCpu`
   - program display strings routed through `DskyIo`
   - execution-status text such as `EXEC KEYRUPT1` routed from native CPU rope-label tracking through `DskyIo`
+  - unsupported-opcode status text such as `UNSUPPORTED KEYRUPT1` routed from native CPU execution state through `DskyIo`
+  - 1201 / 1202 alarm selection derived from native CPU unsupported-opcode pressure plus native major-mode/display-mode state
 - Compatibility fallback now:
   - `register1`
   - `register2`
@@ -75,8 +85,6 @@
   - `statusLine` when written by the scenario layer for non-execution events
   - `activeAlarmCode`
   - `activeAlarmTitle`
-  - `totalAlarms`
-  - `alarmNeedsAcknowledgement`
   - `altitudeMeters`
   - `verticalVelocityMps`
   - `horizontalVelocityMps`

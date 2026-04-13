@@ -145,20 +145,6 @@ void CompatibilityScenario::updateLoadAndAlarms(AgcCpu& cpu, DskyIo& dsky) {
         scriptedPressure = 0.22;
     }
     loadRatio_ = phaseLoad + displayLoad + radarLoad + scriptedPressure + std::abs(throttleTrim_) * 0.05;
-
-    if (!dsky.alarmNeedsAcknowledgement()) {
-        if (loadRatio_ > 1.22 && dsky.phaseProgram() == "64") {
-            totalAlarms_ += 1;
-            dsky.setAlarm("1201", "Executive Overflow (VAC Pressure)", true, totalAlarms_);
-            lastEvent_ = "1201 Executive Overflow (VAC Pressure)";
-            dsky.setStatus(lastEvent_);
-        } else if (loadRatio_ > 1.08) {
-            totalAlarms_ += 1;
-            dsky.setAlarm("1202", "Executive Overflow (Coreset Pressure)", true, totalAlarms_);
-            lastEvent_ = "1202 Executive Overflow (Coreset Pressure)";
-            dsky.setStatus(lastEvent_);
-        }
-    }
 }
 
 void CompatibilityScenario::updatePhaseAndOutcome(AgcCpu& cpu, DskyIo& dsky) {

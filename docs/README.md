@@ -2,6 +2,12 @@
 
 Apollo Guidance DSKY Simulator is a native Android Kotlin + Jetpack Compose app built around a native C++ core behind JNI. The current build preserves an emulator-oriented architecture and one runnable Apollo 11 LM vertical slice, but it still does not execute original Apollo software strongly enough to claim true Apollo runtime execution.
 
+## Non-Negotiable Apollo Artifact Rule
+
+- Apollo source code, listings, and imported Apollo-derived program artifacts must remain untouched.
+- The project must not rewrite, normalize, patch, paraphrase, or "improve" Apollo code.
+- The emulator, JNI layer, Android shell, annotations, and helper/bootstrap assets must adapt around Apollo artifacts rather than altering them.
+
 ## How to run
 
 1. Open the project in Android Studio.

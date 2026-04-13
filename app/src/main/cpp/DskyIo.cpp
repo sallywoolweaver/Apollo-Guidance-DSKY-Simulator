@@ -138,8 +138,18 @@ void DskyIo::syncProgramFromCpu(const AgcCpu& cpu) {
 
 void DskyIo::syncExecutionFromCpu(const AgcCpu& cpu, const AgcMemoryImage&) {
     const bool executingApolloWord = cpu.state().runState == CpuRunState::EXECUTING && cpu.state().lastFetchedWord != 0;
+    const bool unsupportedApolloOpcode = cpu.state().unsupportedOpcodeCount > 0;
     compActyLight_ = executingApolloWord;
-    if (alarmNeedsAcknowledgement_ || oprErrLight_) {
+    oprErrLight_ = unsupportedApolloOpcode;
+    if (alarmNeedsAcknowledgement_) {
+        return;
+    }
+    if (unsupportedApolloOpcode) {
+        if (!cpu.state().currentLabel.empty()) {
+            statusLine_ = "UNSUPPORTED " + cpu.state().currentLabel;
+        } else {
+            statusLine_ = "UNSUPPORTED OPCODE";
+        }
         return;
     }
     if (executingApolloWord) {

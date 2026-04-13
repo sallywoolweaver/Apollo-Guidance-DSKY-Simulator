@@ -1,5 +1,11 @@
 # Assumptions
 
+## Apollo artifact handling rule
+
+- Apollo source code, listings, and imported Apollo-derived program artifacts are treated as read-only historical material.
+- The project must not rewrite, normalize, patch, paraphrase, or "improve" Apollo code.
+- Any helper/bootstrap/annotation data added by this project must remain clearly separate from Apollo artifacts.
+
 ## Historical uncertainties
 
 - The slice does not claim exact Apollo 11 descent initial state, timing, or trajectory. Initial altitude, fuel, and velocities are mobile-simulation approximations.
@@ -24,7 +30,7 @@
 
 - The initial annotation asset is a curated Luminary099 subset rather than a complete source-index of every label.
 - The extraction utility uses simple heuristic parsing for comments and labels and should be treated as an indexing aid, not a proof tool.
-- Some file-path/title normalization may differ slightly between GitHub source files and ibiblio listing names; this should be revisited when a full local Apollo source import is used.
+- Some file-path/title naming may differ slightly between GitHub source files and ibiblio listing names; this should be handled in project metadata rather than by modifying Apollo artifacts.
 
 ## Software-family scaffolding assumptions
 

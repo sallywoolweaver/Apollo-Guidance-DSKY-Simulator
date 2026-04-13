@@ -13,6 +13,7 @@ class AgcMemoryImage;
 class DskyIo;
 class CompatibilityScenario;
 class ScenarioBootstrap;
+class AlarmExecutive;
 
 class NativeApolloCore {
   public:
@@ -32,6 +33,7 @@ class NativeApolloCore {
     AgcMemoryImage* memoryImage_;
     ScenarioBootstrap* scenarioBootstrap_;
     DskyIo* dskyIo_;
+    AlarmExecutive* alarmExecutive_;
     CompatibilityScenario* compatibilityScenario_;
 };
 

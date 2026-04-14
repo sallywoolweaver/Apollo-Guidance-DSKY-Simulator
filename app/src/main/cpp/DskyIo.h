@@ -26,12 +26,19 @@ class DskyIo {
   public:
     void initialize();
     void resetForProgram(const std::string& initialProgram);
-    DskyEvent pressKey(const std::string& key);
+    DskyEvent pressKey(const std::string& key, AgcCpu& cpu);
     DskyEvent executePendingCommand(AgcCpu& cpu);
+    void releaseMomentaryInputs(AgcCpu& cpu);
     void syncProgramFromCpu(const AgcCpu& cpu);
     void syncExecutionFromCpu(const AgcCpu& cpu, const AgcMemoryImage& memoryImage);
 
     void setProgram(const std::string& program);
+    void setLandingTelemetry(
+        double altitudeMeters,
+        double verticalVelocityMps,
+        double horizontalVelocityMps,
+        double fuelKg
+    );
     void setRegisters(const std::string& r1, const std::string& r2, const std::string& r3);
     void setPhase(const std::string& phaseLabel, const std::string& phaseProgram);
     void setStatus(const std::string& status);
@@ -64,8 +71,14 @@ class DskyIo {
     bool compActyLight() const { return compActyLight_; }
     bool keyRelLight() const { return keyRelLight_; }
     DisplayMode displayMode() const { return displayMode_; }
+    bool hasApolloDisplayOutput() const { return hasApolloDisplayOutput_; }
 
   private:
+    void refreshRegisters();
+    void syncApolloDisplayFromCpu(const AgcCpu& cpu);
+    static std::string signedWhole(double value);
+    static std::string signedTenth(double value);
+
     std::string program_ = "63";
     std::string verb_ = "16";
     std::string noun_ = "68";
@@ -83,9 +96,15 @@ class DskyIo {
     bool oprErrLight_ = false;
     bool compActyLight_ = false;
     bool keyRelLight_ = false;
+    bool hasApolloDisplayOutput_ = false;
+    bool pendingProceedRelease_ = false;
     EntryField entryField_ = EntryField::NONE;
     std::string entryBuffer_;
     DisplayMode displayMode_ = DisplayMode::LANDING_MONITOR;
+    double altitudeMeters_ = 2400.0;
+    double verticalVelocityMps_ = -34.0;
+    double horizontalVelocityMps_ = 24.0;
+    double fuelKg_ = 835.0;
 };
 
 }  // namespace apollo

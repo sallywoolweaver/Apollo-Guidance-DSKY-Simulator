@@ -33,9 +33,6 @@ class CompatibilityScenario {
     void updateGuidanceTargets(const DskyIo& dsky);
     void updateLoadAndAlarms(AgcCpu& cpu, DskyIo& dsky);
     void updatePhaseAndOutcome(AgcCpu& cpu, DskyIo& dsky);
-    void updateRegisters(const DskyIo& dsky, DskyIo& display);
-    static std::string signedWhole(double value);
-    static std::string signedTenth(double value);
 
     double altitudeMeters_ = 2400.0;
     double verticalVelocityMps_ = -34.0;

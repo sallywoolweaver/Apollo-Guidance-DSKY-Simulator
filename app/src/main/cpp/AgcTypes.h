@@ -77,6 +77,15 @@ struct AgcCpuState {
     uint32_t restartCounter = 0;
     int currentMajorMode = 63;
     uint16_t accumulator = 0;
+    uint16_t lRegister = 0;
+    uint16_t qRegister = 0;
+    uint16_t ebRegister = 0;
+    uint16_t fbRegister = 0;
+    uint16_t bbRegister = 0;
+    uint16_t indexRegister = 0;
+    bool interruptsEnabled = true;
+    uint16_t outputChannel7 = 0;
+    bool extendFlag = false;
     uint16_t lastFetchedWord = 0;
     uint16_t lastOpcodeClass = 0;
     uint32_t unsupportedOpcodeCount = 0;

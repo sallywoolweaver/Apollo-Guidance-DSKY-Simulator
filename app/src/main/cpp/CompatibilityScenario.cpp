@@ -1,7 +1,6 @@
 #include "CompatibilityScenario.h"
 
 #include <algorithm>
-#include <cmath>
 
 namespace apollo {
 
@@ -46,8 +45,8 @@ void CompatibilityScenario::resetFromBootstrap(const ScenarioBootstrapData& boot
     dsky.setPhase("Braking", std::to_string(cpu.state().currentMajorMode));
     dsky.setStatus("Program image loaded");
     dsky.clearAlarm();
+    dsky.setLandingTelemetry(altitudeMeters_, verticalVelocityMps_, horizontalVelocityMps_, fuelKg_);
     updateGuidanceTargets(dsky);
-    updateRegisters(dsky, dsky);
 }
 
 void CompatibilityScenario::handleDskyEvent(const DskyEvent& event, AgcCpu& cpu, DskyIo& dsky) {
@@ -81,7 +80,6 @@ void CompatibilityScenario::handleDskyEvent(const DskyEvent& event, AgcCpu& cpu,
         case DskyEventType::NONE:
             break;
     }
-    updateRegisters(dsky, dsky);
 }
 
 void CompatibilityScenario::handleKey(const std::string& key, DskyIo& dsky) {
@@ -118,7 +116,7 @@ void CompatibilityScenario::step(double deltaSeconds, AgcMemoryImage& memoryImag
 
     updateLoadAndAlarms(cpu, dsky);
     updatePhaseAndOutcome(cpu, dsky);
-    updateRegisters(dsky, dsky);
+    dsky.setLandingTelemetry(altitudeMeters_, verticalVelocityMps_, horizontalVelocityMps_, fuelKg_);
 }
 
 void CompatibilityScenario::updateGuidanceTargets(const DskyIo& dsky) {
@@ -148,6 +146,26 @@ void CompatibilityScenario::updateLoadAndAlarms(AgcCpu& cpu, DskyIo& dsky) {
 }
 
 void CompatibilityScenario::updatePhaseAndOutcome(AgcCpu& cpu, DskyIo& dsky) {
+    const std::string displayedProgram = dsky.program();
+    if (dsky.hasApolloDisplayOutput() && displayedProgram != dsky.phaseProgram()) {
+        if (displayedProgram == "64") {
+            cpu.requestMajorMode(64);
+            dsky.syncProgramFromCpu(cpu);
+            dsky.setPhase("Approach", displayedProgram);
+            lastEvent_ = "Apollo DSKY entered P64";
+            dsky.setStatus(lastEvent_);
+            return;
+        }
+        if (displayedProgram == "66") {
+            cpu.requestMajorMode(66);
+            dsky.syncProgramFromCpu(cpu);
+            dsky.setPhase("Landing", displayedProgram);
+            lastEvent_ = "Apollo DSKY entered P66";
+            dsky.setStatus(lastEvent_);
+            return;
+        }
+    }
+
     if (fuelKg_ <= 0.0 && altitudeMeters_ > 0.0) {
         missionResult_ = "Fuel Exhausted";
         missionResultSummary_ = "Usable descent propellant was exhausted before a controlled landing.";
@@ -205,51 +223,6 @@ void CompatibilityScenario::updatePhaseAndOutcome(AgcCpu& cpu, DskyIo& dsky) {
         lastEvent_ = "P66 landing phase entered";
         dsky.setStatus(lastEvent_);
     }
-}
-
-void CompatibilityScenario::updateRegisters(const DskyIo& dsky, DskyIo& display) {
-    if (dsky.alarmNeedsAcknowledgement() && !dsky.alarmCode().empty()) {
-        display.setRegisters(
-            "+12" + dsky.phaseProgram(),
-            "+0" + dsky.alarmCode(),
-            "+" + std::to_string(10000 + dsky.totalAlarms()).substr(1)
-        );
-        return;
-    }
-    if (dsky.displayMode() == DisplayMode::PHASE_SUMMARY) {
-        display.setRegisters(
-            "+0" + dsky.phaseProgram() + "00",
-            signedWhole(altitudeMeters_),
-            signedWhole(std::abs(horizontalVelocityMps_))
-        );
-        return;
-    }
-    if (dsky.displayMode() == DisplayMode::LAST_ALARM) {
-        display.setRegisters(
-            "+" + std::to_string(10000 + dsky.totalAlarms()).substr(1),
-            dsky.alarmCode().empty() ? "+00000" : "+0" + dsky.alarmCode(),
-            "+0" + dsky.phaseProgram() + "00"
-        );
-        return;
-    }
-    display.setRegisters(
-        signedWhole(altitudeMeters_),
-        signedTenth(verticalVelocityMps_),
-        signedWhole(fuelKg_)
-    );
-}
-
-std::string CompatibilityScenario::signedWhole(double value) {
-    int rounded = static_cast<int>(std::round(value));
-    rounded = std::max(-9999, std::min(99999, rounded));
-    if (rounded >= 0) {
-        return "+" + std::to_string(100000 + rounded).substr(1);
-    }
-    return "-" + std::to_string(10000 + std::abs(rounded)).substr(1);
-}
-
-std::string CompatibilityScenario::signedTenth(double value) {
-    return signedWhole(value * 10.0);
 }
 
 }  // namespace apollo

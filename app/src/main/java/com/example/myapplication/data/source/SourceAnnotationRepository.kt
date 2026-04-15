@@ -27,6 +27,10 @@ class SourceAnnotationRepository(
                         commentExcerpt = value.getString("commentExcerpt"),
                         commentBlock = value.getString("commentBlock"),
                         tags = value.getJSONArray("tags").toStringList(),
+                        sourceSection = value.optString("sourceSection", ""),
+                        bank = value.optNullableInt("bank"),
+                        offset = value.optNullableInt("offset"),
+                        mappingNotes = value.optString("mappingNotes", ""),
                     ),
                 )
             }
@@ -57,6 +61,11 @@ class SourceAnnotationRepository(
             labels = labels,
             files = files,
             tags = tags,
+            labelsByAddress = labels.values.mapNotNull { label ->
+                val bank = label.bank ?: return@mapNotNull null
+                val offset = label.offset ?: return@mapNotNull null
+                "${bank.toString(8).padStart(2, '0')}:${offset.toString(8).padStart(4, '0')}" to label
+            }.toMap(),
         )
     }
 }
@@ -65,4 +74,11 @@ private fun JSONArray.toStringList(): List<String> = buildList {
     for (index in 0 until length()) {
         add(getString(index))
     }
+}
+
+private fun JSONObject.optNullableInt(name: String): Int? {
+    if (!has(name) || isNull(name)) {
+        return null
+    }
+    return getInt(name)
 }

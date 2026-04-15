@@ -342,14 +342,28 @@ fun SourceBrowserScreen(
             items(labels) { label ->
                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(label.id, color = MaterialTheme.colorScheme.primary, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
-                        Text(label.title, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold)
-                        Text(label.file, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
-                        Text(label.summary, color = MaterialTheme.colorScheme.onSurface)
-                        Text("Original note", color = MaterialTheme.colorScheme.primary, fontSize = 12.sp)
-                        Text(label.commentBlock, color = MaterialTheme.colorScheme.onSurfaceVariant, fontFamily = FontFamily.Monospace, fontSize = 12.sp)
-                    }
+                Text(label.id, color = MaterialTheme.colorScheme.primary, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
+                if (label.bank != null && label.offset != null) {
+                    Text(
+                        "Bank ${label.bank.toString(8).padStart(2, '0')} Offset ${label.offset.toString(8).padStart(4, '0')}",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 12.sp,
+                        fontFamily = FontFamily.Monospace,
+                    )
                 }
+                Text(label.title, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold)
+                Text(label.file, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                if (label.sourceSection.isNotEmpty()) {
+                    Text(label.sourceSection, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                }
+                Text(label.summary, color = MaterialTheme.colorScheme.onSurface)
+                if (label.mappingNotes.isNotEmpty()) {
+                    Text(label.mappingNotes, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                }
+                Text("Original note", color = MaterialTheme.colorScheme.primary, fontSize = 12.sp)
+                Text(label.commentBlock, color = MaterialTheme.colorScheme.onSurfaceVariant, fontFamily = FontFamily.Monospace, fontSize = 12.sp)
+            }
+        }
             }
             item {
                 Button(onClick = onBack) { Text("Back") }
@@ -376,7 +390,18 @@ private fun EngineerSourcePanel(
             } else {
                 SourceRelationChip(currentNote.relationTier)
                 Text(currentNote.labelInfo.id, color = MaterialTheme.colorScheme.onSurface, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
+                if (currentNote.labelInfo.bank != null && currentNote.labelInfo.offset != null) {
+                    Text(
+                        "Live Apollo address ${currentNote.labelInfo.bank.toString(8).padStart(2, '0')}:${currentNote.labelInfo.offset.toString(8).padStart(4, '0')}",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 12.sp,
+                    )
+                }
                 Text(currentNote.labelInfo.file, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                if (currentNote.labelInfo.sourceSection.isNotEmpty()) {
+                    Text(currentNote.labelInfo.sourceSection, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                }
                 Text(currentNote.labelInfo.commentExcerpt, color = MaterialTheme.colorScheme.onSurface)
                 Text(currentNote.modernContext, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                 Text(

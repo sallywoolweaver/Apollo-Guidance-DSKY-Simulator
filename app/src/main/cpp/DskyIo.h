@@ -43,6 +43,7 @@ class DskyIo {
     void setPhase(const std::string& phaseLabel, const std::string& phaseProgram);
     void setStatus(const std::string& status);
     void setDisplayMode(DisplayMode displayMode);
+    void setApolloInputRoutingEnabled(bool enabled);
     void setAlarm(
         const std::string& code,
         const std::string& title,
@@ -97,6 +98,8 @@ class DskyIo {
     bool compActyLight_ = false;
     bool keyRelLight_ = false;
     bool hasApolloDisplayOutput_ = false;
+    bool apolloInputRoutingEnabled_ = false;
+    bool pendingKeycodeRelease_ = false;
     bool pendingProceedRelease_ = false;
     EntryField entryField_ = EntryField::NONE;
     std::string entryBuffer_;

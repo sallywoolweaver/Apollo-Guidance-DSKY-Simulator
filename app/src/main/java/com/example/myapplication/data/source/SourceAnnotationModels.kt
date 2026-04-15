@@ -6,6 +6,7 @@ data class SourceAnnotationCatalog(
     val labels: Map<String, SourceLabelInfo> = emptyMap(),
     val files: Map<String, SourceFileInfo> = emptyMap(),
     val tags: Map<String, List<String>> = emptyMap(),
+    val labelsByAddress: Map<String, SourceLabelInfo> = emptyMap(),
 )
 
 data class SourceFileInfo(
@@ -23,10 +24,15 @@ data class SourceLabelInfo(
     val commentExcerpt: String,
     val commentBlock: String,
     val tags: List<String>,
+    val sourceSection: String = "",
+    val bank: Int? = null,
+    val offset: Int? = null,
+    val mappingNotes: String = "",
 )
 
 enum class SourceRelationTier(val displayName: String) {
     CURRENTLY_EXECUTING("Currently executing"),
+    EXACT_RUNTIME_MAPPING("Exact runtime mapping"),
     RELATED_TO_CURRENT_PHASE("Related to current phase"),
     HISTORICAL_BACKGROUND_ONLY("Historical background only"),
 }
@@ -48,6 +54,19 @@ data class SourceAnnotationState(
 object SourceAnnotationMapper {
     fun map(snapshot: CoreSnapshot, catalog: SourceAnnotationCatalog): RuntimeSourceNote? {
         fun label(id: String) = catalog.labels[id]
+        fun addressKey(bank: Int, offset: Int) = "${bank.toString(8).padStart(2, '0')}:${offset.toString(8).padStart(4, '0')}"
+
+        if (snapshot.currentLabel.isNotEmpty()) {
+            val mapped = catalog.labels[snapshot.currentLabel]
+                ?: catalog.labelsByAddress[addressKey(snapshot.programCounterBank, snapshot.programCounterOffset)]
+            if (mapped != null) {
+                return RuntimeSourceNote(
+                    relationTier = SourceRelationTier.EXACT_RUNTIME_MAPPING,
+                    labelInfo = mapped,
+                    modernContext = "The native core is currently executing a rope word mapped to this exact Apollo label and bank-local address.",
+                )
+            }
+        }
 
         return when {
             snapshot.activeAlarmCode.isNotEmpty() -> label("VARALARM")?.let {

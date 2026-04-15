@@ -20,6 +20,7 @@ class AgcMemoryImage {
     void resetErasable();
     uint16_t ropeWord(int bank, int offset) const;
     std::string ropeLabel(int bank, int offset) const;
+    bool findRopeLabel(const std::string& label, int& bank, int& offset) const;
     uint16_t erasableWord(int address) const;
     void writeErasableWord(int address, uint16_t word);
     uint16_t erasableBankWord(int bank, int offset) const;

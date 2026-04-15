@@ -15,6 +15,12 @@
 namespace apollo {
 
 namespace {
+constexpr uint16_t kMpacAddress = 0154;
+constexpr uint16_t kNewLocAddress = 065;
+constexpr uint16_t kAruptAddress = 010;
+constexpr uint16_t kLruptAddress = 011;
+constexpr uint16_t kBruptAddress = 017;
+
 struct ProgramPackageSections {
     std::vector<uint8_t> ropeBytes;
     std::vector<uint8_t> ropeMetadataBytes;
@@ -134,6 +140,22 @@ ProgramPackageSections splitProgramPackage(const std::vector<uint8_t>& bytes) {
 
     return sections;
 }
+
+uint16_t dskyKeycodeForKey(const std::string& key) {
+    if (key == "VERB") return 17;
+    if (key == "RSET") return 18;
+    if (key == "KEY REL") return 25;
+    if (key == "+") return 26;
+    if (key == "-") return 27;
+    if (key == "ENTR") return 28;
+    if (key == "CLR") return 30;
+    if (key == "NOUN") return 31;
+    if (key.size() == 1 && std::isdigit(static_cast<unsigned char>(key[0]))) {
+        const int digit = key[0] - '0';
+        return digit == 0 ? 16 : static_cast<uint16_t>(digit);
+    }
+    return 0;
+}
 }  // namespace
 
 NativeApolloCore::NativeApolloCore()
@@ -192,7 +214,9 @@ bool NativeApolloCore::loadProgramImage(const std::vector<uint8_t>& image) {
     }
     cpu_->loadProgramContext(memoryImage_->metadata(), scenarioBootstrap_->data().requestedInitialProgram);
     alarmExecutive_->reset();
+    pendingExecutiveRequestLabel_.clear();
     compatibilityScenario_->resetFromBootstrap(scenarioBootstrap_->data(), memoryImage_->metadata(), *cpu_, *dskyIo_);
+    dskyIo_->setApolloInputRoutingEnabled(hasApolloDskyEntryPoints());
     return true;
 }
 
@@ -203,7 +227,9 @@ void NativeApolloCore::resetScenario() {
     }
     memoryImage_->resetErasable();
     alarmExecutive_->reset();
+    pendingExecutiveRequestLabel_.clear();
     compatibilityScenario_->resetFromBootstrap(scenarioBootstrap_->data(), memoryImage_->metadata(), *cpu_, *dskyIo_);
+    dskyIo_->setApolloInputRoutingEnabled(hasApolloDskyEntryPoints());
 }
 
 void NativeApolloCore::pressKey(const std::string& key) {
@@ -213,7 +239,8 @@ void NativeApolloCore::pressKey(const std::string& key) {
         return;
     }
     DskyEvent event = dskyIo_->pressKey(key, *cpu_);
-    if (event.type == DskyEventType::EXECUTE_PENDING_COMMAND) {
+    const bool routedToApollo = routeApolloDskyInput(key);
+    if (!routedToApollo && event.type == DskyEventType::EXECUTE_PENDING_COMMAND) {
         event = dskyIo_->executePendingCommand(*cpu_);
     }
     compatibilityScenario_->handleDskyEvent(event, *cpu_, *dskyIo_);
@@ -234,6 +261,150 @@ void NativeApolloCore::stepSimulation(double deltaSeconds) {
 CoreState NativeApolloCore::getSnapshot() const {
     std::scoped_lock lock(mutex_);
     return SnapshotBuilder::build(*cpu_, *memoryImage_, *dskyIo_, *compatibilityScenario_);
+}
+
+bool NativeApolloCore::hasApolloDskyEntryPoints() const {
+    int bank = 0;
+    int offset = 0;
+    return memoryImage_->findRopeLabel("KEYRUPT1", bank, offset) &&
+        memoryImage_->findRopeLabel("ACCEPTUP", bank, offset) &&
+        memoryImage_->findRopeLabel("CHARIN", bank, offset) &&
+        memoryImage_->findRopeLabel("PROCKEY", bank, offset);
+}
+
+bool NativeApolloCore::jumpToLabel(const std::string& label) {
+    int bank = 0;
+    int offset = 0;
+    if (!memoryImage_->findRopeLabel(label, bank, offset)) {
+        return false;
+    }
+    cpu_->jumpToBankOffset(static_cast<uint16_t>(bank), static_cast<uint16_t>(offset));
+    return true;
+}
+
+bool NativeApolloCore::jumpToLabelWithSwitchedBank(const std::string& label, uint16_t switchedBank) {
+    cpu_->setSwitchedFixedBank(switchedBank);
+    return jumpToLabel(label);
+}
+
+int NativeApolloCore::normalizeFixedAddressForBank(int bank, uint16_t address12) {
+    const int address = address12 & 07777;
+    if (bank == 02 && address >= 04000) {
+        return address - 04000;
+    }
+    if (bank == 03 && address >= 06000) {
+        return address - 06000;
+    }
+    if (bank >= 04 && address >= 02000) {
+        return address - 02000;
+    }
+    return address & 01777;
+}
+
+uint16_t NativeApolloCore::fixedAddressForBankOffset(int bank, int offset) {
+    const uint16_t normalizedOffset = static_cast<uint16_t>(offset & 01777);
+    if (bank == 02) {
+        return static_cast<uint16_t>(04000 | normalizedOffset);
+    }
+    if (bank == 03) {
+        return static_cast<uint16_t>(06000 | normalizedOffset);
+    }
+    if (bank >= 04) {
+        return static_cast<uint16_t>(02000 | normalizedOffset);
+    }
+    return normalizedOffset;
+}
+
+void NativeApolloCore::primeApolloKeyruptLeadInState() {
+    const auto& state = cpu_->state();
+    memoryImage_->writeErasableWord(kAruptAddress, state.accumulator);
+    memoryImage_->writeErasableWord(kLruptAddress, state.lRegister);
+    memoryImage_->writeErasableWord(
+        kBruptAddress,
+        fixedAddressForBankOffset(state.programCounterBank, state.programCounterOffset)
+    );
+    cpu_->setAccumulator(state.bbRegister);
+}
+
+bool NativeApolloCore::dispatchCapturedNovacRequest() {
+    const int requestBank = static_cast<int>(cpu_->switchedFixedBank());
+    const uint16_t requestAddress = cpu_->state().qRegister & 07777;
+    const int requestOffset = normalizeFixedAddressForBank(requestBank, requestAddress);
+    pendingExecutiveRequestLabel_ = memoryImage_->ropeLabel(requestBank, requestOffset);
+    return !pendingExecutiveRequestLabel_.empty();
+}
+
+bool NativeApolloCore::dispatchPendingExecutiveRequest() {
+    if (pendingExecutiveRequestLabel_ == "CHARIN_2CADR") {
+        pendingExecutiveRequestLabel_.clear();
+        return jumpToLabelWithSwitchedBank("CHARIN", 040);
+    }
+    return false;
+}
+
+bool NativeApolloCore::runInstructionRoutedApolloInput(
+    const std::string& entryLabel,
+    int maxInstructions
+) {
+    pendingExecutiveRequestLabel_.clear();
+    primeApolloKeyruptLeadInState();
+    if (!jumpToLabelWithSwitchedBank(entryLabel, 04)) {
+        return false;
+    }
+
+    for (int instruction = 0; instruction < maxInstructions; ++instruction) {
+        cpu_->stepInstruction(*memoryImage_);
+
+        const auto& state = cpu_->state();
+        if (state.programCounterBank == 02 && state.programCounterOffset == 01101) {
+            if (!dispatchCapturedNovacRequest()) {
+                return false;
+            }
+            continue;
+        }
+
+        if (pendingExecutiveRequestLabel_.empty()) {
+            if (state.currentLabel == "CHARIN2") {
+                return true;
+            }
+            continue;
+        }
+
+        if (state.currentLabel == "CHARIN2") {
+            return true;
+        }
+    }
+
+    if (!pendingExecutiveRequestLabel_.empty()) {
+        if (!dispatchPendingExecutiveRequest()) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool NativeApolloCore::routeApolloDskyInput(const std::string& key) {
+    if (key == "PRO") {
+        if (!jumpToLabelWithSwitchedBank("PROCKEY", 040)) {
+            return false;
+        }
+        for (int instruction = 0; instruction < 48; ++instruction) {
+            cpu_->stepInstruction(*memoryImage_);
+            if (cpu_->state().currentLabel == "VBPROC") {
+                break;
+            }
+        }
+        return true;
+    }
+
+    const uint16_t keycode = dskyKeycodeForKey(key);
+    if (keycode == 0) {
+        return false;
+    }
+    memoryImage_->writeErasableWord(kMpacAddress, keycode);
+    memoryImage_->writeErasableWord(kNewLocAddress, 0);
+    memoryImage_->writeErasableWord(kNewLocAddress + 1, 0);
+    return runInstructionRoutedApolloInput("KEYRUPT1", 384);
 }
 
 }  // namespace apollo

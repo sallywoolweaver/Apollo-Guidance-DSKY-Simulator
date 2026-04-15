@@ -31,6 +31,10 @@ CoreState SnapshotBuilder::build(
     snapshot.oprErrLight = dsky.oprErrLight();
     snapshot.compActyLight = dsky.compActyLight();
     snapshot.keyRelLight = dsky.keyRelLight();
+    snapshot.currentLabel = cpu.state().currentLabel;
+    snapshot.programCounterBank = cpu.state().programCounterBank;
+    snapshot.programCounterOffset = cpu.state().programCounterOffset;
+    snapshot.executionNote = cpu.state().executionNote;
 
     // Compatibility fallback flight and outcome state.
     snapshot.altitudeMeters = scenario.altitudeMeters();

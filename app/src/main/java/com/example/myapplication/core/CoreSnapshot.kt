@@ -30,6 +30,10 @@ class CoreSnapshot {
     @JvmField var oprErrLight: Boolean = false
     @JvmField var compActyLight: Boolean = true
     @JvmField var keyRelLight: Boolean = false
+    @JvmField var currentLabel: String = ""
+    @JvmField var programCounterBank: Int = 0
+    @JvmField var programCounterOffset: Int = 0
+    @JvmField var executionNote: String = "CPU idle"
 
     companion object {
         fun initial(): CoreSnapshot = CoreSnapshot()

@@ -25,7 +25,7 @@
   - `phaseProgram`
   - DSKY display-mode effects for `V16 N68`, `V06 N63/N64/N60`, `V05 N09`
   - DSKY register arbitration across landing monitor / phase summary / last-alarm views
-  - `PRO`, `RSET`, `KEY REL`, and verb/noun entry handling
+  - fallback `PRO`, `RSET`, `KEY REL`, and verb/noun entry handling only when Apollo DSKY entry routing is absent
   - 1201 / 1202 alarm ownership
 - Derived from emulator state now:
   - visible `program`, `verb`, and `noun` digits when Apollo relay row output is present
@@ -33,16 +33,28 @@
   - DSKY `COMP ACTY`, `KEY REL`, and `OPR ERR` when Apollo channel-11 output is present
   - display-mode selection from Apollo-driven `VERB/NOUN` output when relay rows are present
   - DSKY key injection into Apollo-facing input channels
+  - momentary release of channel-15 DSKY key input after the next native step
   - `PRO` as an Apollo-style channel-32 proceed input pulse
+  - exact Luminary 099 direct entry into Apollo `PROCKEY` through the native core
+  - a partial exact Luminary 099 `KEYRUPT1` / `LODSAMPT` / `KEYCOM` / `ACCEPTUP` lead-in before exact `NOVAC` request capture, exact `NOVAC2` / `SETLOC` Executive aftermath, exact `WAITLIST` `RESUME` entry work, the exact Apollo `RESUME` special instruction, and a later remaining fallback dispatch into exact `CHARIN`
+  - corrected Apollo double-word CPU semantics for `DCA`, `DAS`, and `DXCH`
+  - more honest interrupt lead-in seeding for the routed key path via `ARUPT`, `LRUPT`, `BRUPT`, and interrupted `BBANK`
+  - Apollo-corrected channel-10 relay-row decoding for visible DSKY register digits and signs
+  - exact live label/bank/source-section mapping for the mapped Luminary 099 DSKY/input routines
   - narrow `P64` / `P66` adoption when Apollo-driven program display changes to those values
   - major-mode ownership via `AgcCpu`
+  - `TC Q` subroutine returns through the native CPU path
   - execution-status text such as `EXEC <label>`
   - unsupported-opcode text such as `UNSUPPORTED <label>`
   - banked rope/fixed/erasable fetch ownership
   - channel 7 superbank state
 - Compatibility fallback now:
-  - local keyboard command parsing and entry buffering
-  - local command consequences when Apollo relay output is absent
+  - the full Apollo-owned `KEYRUPT1` / `T4RUPT` interrupt path is still missing
+  - the current key-input path still uses a narrow later fallback dispatch rather than full Apollo job scheduling, core-set switching, and interrupt return
+  - the active Luminary 099 erasable image is still a custom initializer; it now seeds only the exact Executive fresh-start words needed for the narrow routed key path
+  - local keyboard command parsing and entry buffering still exist only as fallback when Apollo DSKY entry routing is absent
+  - local command consequences still exist only as fallback when Apollo relay output and Apollo DSKY entry routing are absent
+  - local `KEY REL` / `RSET` / alarm acknowledgement consequences still exist only as fallback when Apollo/peripheral ownership is absent
   - fallback phase/program thresholds when Apollo output is absent
   - `phaseLabel`
   - most telemetry values

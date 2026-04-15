@@ -19,7 +19,9 @@ constexpr uint16_t kRegFB = 04;
 constexpr uint16_t kRegZ = 05;
 constexpr uint16_t kRegBB = 06;
 constexpr uint16_t kRegZERO = 07;
+constexpr uint16_t kRegBRUPT = 017;
 constexpr uint16_t kReg16Limit = 03;
+constexpr uint16_t kResumeInstructionWord = 050017;
 
 uint16_t maskWord(uint32_t value) {
     return static_cast<uint16_t>(value & kWordMask);
@@ -95,6 +97,30 @@ void AgcCpu::requestMajorMode(int majorMode) {
     state_.currentMajorMode = majorMode;
 }
 
+void AgcCpu::jumpToBankOffset(uint16_t bank, uint16_t offset) {
+    if (!state_.initialized) {
+        initialize();
+    }
+    state_.programCounterBank = bank & 077;
+    state_.programCounterOffset = offset & 01777;
+    state_.runState = CpuRunState::EXECUTING;
+}
+
+void AgcCpu::setSwitchedFixedBank(uint16_t bank) {
+    if (!state_.initialized) {
+        initialize();
+    }
+    state_.fbRegister = static_cast<uint16_t>((bank & 037) << 10);
+    syncBankRegisters();
+}
+
+void AgcCpu::setAccumulator(uint16_t word) {
+    if (!state_.initialized) {
+        initialize();
+    }
+    state_.accumulator = maskWord(word);
+}
+
 void AgcCpu::setInputChannel(uint16_t channel, uint16_t word) {
     writeChannel(channel, word);
 }
@@ -119,6 +145,10 @@ uint16_t AgcCpu::dskyRelayWord(uint16_t row) const {
     return dskyRelayWords_[row & 017];
 }
 
+uint16_t AgcCpu::switchedFixedBank() const {
+    return static_cast<uint16_t>((state_.fbRegister >> 10) & 037);
+}
+
 void AgcCpu::step(double deltaSeconds, AgcMemoryImage& memoryImage) {
     if (!state_.initialized) {
         initialize();
@@ -136,24 +166,37 @@ void AgcCpu::step(double deltaSeconds, AgcMemoryImage& memoryImage) {
     }
 
     for (uint64_t index = 0; index < instructionsToStep; ++index) {
-        branchTaken_ = false;
-        const uint16_t ropeWord = memoryImage.ropeWord(state_.programCounterBank, state_.programCounterOffset);
-        state_.currentLabel = memoryImage.ropeLabel(state_.programCounterBank, state_.programCounterOffset);
-        const uint16_t effectiveWord = applyIndexToInstruction(ropeWord);
-        state_.lastFetchedWord = effectiveWord;
-        executeFetchedWord(effectiveWord, memoryImage);
-        if (!state_.currentLabel.empty()) {
-            state_.executedLabels.push_back(state_.currentLabel);
-            if (state_.executedLabels.size() > 4) {
-                state_.executedLabels.erase(state_.executedLabels.begin());
-            }
-        }
-        if (!branchTaken_) {
-            advanceProgramCounter();
-        }
-        state_.executedInstructions += 1;
+        stepInstruction(memoryImage);
     }
     state_.cycleCounter += instructionsToStep;
+}
+
+void AgcCpu::stepInstruction(AgcMemoryImage& memoryImage) {
+    if (!state_.initialized) {
+        initialize();
+    }
+    if (!memoryImage.metadata().containsApolloDerivedWords) {
+        state_.executionNote = "No Apollo-derived rope words loaded";
+        return;
+    }
+
+    branchTaken_ = false;
+    const uint16_t ropeWord = memoryImage.ropeWord(state_.programCounterBank, state_.programCounterOffset);
+    state_.currentLabel = memoryImage.ropeLabel(state_.programCounterBank, state_.programCounterOffset);
+    const uint16_t effectiveWord = applyIndexToInstruction(ropeWord);
+    state_.lastFetchedWord = effectiveWord;
+    executeFetchedWord(effectiveWord, memoryImage);
+    if (!state_.currentLabel.empty()) {
+        state_.executedLabels.push_back(state_.currentLabel);
+        if (state_.executedLabels.size() > 4) {
+            state_.executedLabels.erase(state_.executedLabels.begin());
+        }
+    }
+    if (!branchTaken_) {
+        advanceProgramCounter();
+    }
+    state_.executedInstructions += 1;
+    state_.cycleCounter += 1;
 }
 
 uint16_t AgcCpu::applyIndexToInstruction(uint16_t word) {
@@ -345,6 +388,19 @@ uint16_t AgcCpu::readFixedWord(uint16_t address12, const AgcMemoryImage& memoryI
     return memoryImage.ropeWord(bank, offset);
 }
 
+uint16_t AgcCpu::readOperandPairHigh(uint16_t address10, const AgcMemoryImage& memoryImage) const {
+    return readOperand10(address10, memoryImage);
+}
+
+uint16_t AgcCpu::readOperandPairLow(uint16_t address10, const AgcMemoryImage& memoryImage) const {
+    return readOperand10(static_cast<uint16_t>((address10 + 1) & kAddressMask10), memoryImage);
+}
+
+void AgcCpu::writeOperandPair(uint16_t address10, uint16_t highWord, uint16_t lowWord, AgcMemoryImage& memoryImage) {
+    writeOperand10(address10, highWord, memoryImage);
+    writeOperand10(static_cast<uint16_t>((address10 + 1) & kAddressMask10), lowWord, memoryImage);
+}
+
 void AgcCpu::advanceProgramCounter() {
     state_.programCounterOffset += 1;
     if (state_.programCounterOffset >= 02000) {
@@ -356,6 +412,13 @@ void AgcCpu::advanceProgramCounter() {
 void AgcCpu::executeFetchedWord(uint16_t word, AgcMemoryImage& memoryImage) {
     if (word == 0) {
         state_.executionNote = state_.currentLabel.empty() ? "Fetched empty rope word" : ("Fetched " + state_.currentLabel);
+        return;
+    }
+    if (word == kResumeInstructionWord) {
+        setProgramCounterFromAddress(memoryImage.erasableWord(kRegBRUPT));
+        branchTaken_ = true;
+        state_.supportedOpcodeSkeletonCount++;
+        state_.executionNote = "RESUME";
         return;
     }
 
@@ -390,6 +453,11 @@ void AgcCpu::executeFetchedWord(uint16_t word, AgcMemoryImage& memoryImage) {
                 state_.extendFlag = true;
                 state_.supportedOpcodeSkeletonCount++;
                 state_.executionNote = "EXTEND";
+            } else if (address12 == kRegQ) {
+                setProgramCounterFromAddress(state_.qRegister);
+                branchTaken_ = true;
+                state_.supportedOpcodeSkeletonCount++;
+                state_.executionNote = "TC Q";
             } else {
                 state_.qRegister = static_cast<uint16_t>((state_.programCounterOffset + 1) & kAddressMask12);
                 setProgramCounterFromAddress(address12);
@@ -401,13 +469,17 @@ void AgcCpu::executeFetchedWord(uint16_t word, AgcMemoryImage& memoryImage) {
         case 010:
         case 011: {
             const uint16_t value = readOperand10(address10, memoryImage);
-            state_.accumulator = value;
             if (value == 0) {
+                state_.accumulator = 0;
                 state_.programCounterOffset += 1;
             } else if (value == kWordMask) {
+                state_.accumulator = 0;
                 state_.programCounterOffset += 3;
             } else if ((value & 040000) != 0) {
+                state_.accumulator = maskWord(~value) - 1;
                 state_.programCounterOffset += 2;
+            } else {
+                state_.accumulator = maskWord(value - 1);
             }
             state_.supportedOpcodeSkeletonCount++;
             state_.executionNote = "CCS " + std::to_string(address10);
@@ -426,11 +498,9 @@ void AgcCpu::executeFetchedWord(uint16_t word, AgcMemoryImage& memoryImage) {
             break;
         case 020:
         case 021: {
-            const uint16_t low = maskWord(static_cast<uint32_t>(state_.lRegister) + readOperand10(address10, memoryImage));
-            const uint16_t highAddress = static_cast<uint16_t>((address10 - 1) & kAddressMask10);
-            const uint16_t high = maskWord(static_cast<uint32_t>(state_.accumulator) + readOperand10(highAddress, memoryImage));
-            writeOperand10(address10, low, memoryImage);
-            writeOperand10(highAddress, high, memoryImage);
+            const uint16_t high = maskWord(static_cast<uint32_t>(state_.accumulator) + readOperandPairHigh(address10, memoryImage));
+            const uint16_t low = maskWord(static_cast<uint32_t>(state_.lRegister) + readOperandPairLow(address10, memoryImage));
+            writeOperandPair(address10, high, low, memoryImage);
             state_.accumulator = high;
             state_.lRegister = low;
             state_.supportedOpcodeSkeletonCount++;
@@ -501,13 +571,14 @@ void AgcCpu::executeFetchedWord(uint16_t word, AgcMemoryImage& memoryImage) {
             break;
         case 052:
         case 053: {
-            const uint16_t lowOperand = readOperand10(address10, memoryImage);
-            const uint16_t highAddress = static_cast<uint16_t>((address10 - 1) & kAddressMask10);
-            const uint16_t highOperand = readOperand10(highAddress, memoryImage);
-            writeOperand10(address10, state_.lRegister, memoryImage);
-            writeOperand10(highAddress, state_.accumulator, memoryImage);
-            state_.lRegister = lowOperand;
+            const uint16_t highOperand = readOperandPairHigh(address10, memoryImage);
+            const uint16_t lowOperand = readOperandPairLow(address10, memoryImage);
+            writeOperandPair(address10, state_.accumulator, state_.lRegister, memoryImage);
             state_.accumulator = highOperand;
+            state_.lRegister = lowOperand;
+            if (address10 == kRegZ || address10 == kRegFB) {
+                branchTaken_ = true;
+            }
             state_.supportedOpcodeSkeletonCount++;
             state_.executionNote = "DXCH " + std::to_string(address10);
             break;
@@ -635,9 +706,8 @@ void AgcCpu::executeFetchedWord(uint16_t word, AgcMemoryImage& memoryImage) {
         case 0135:
         case 0136:
         case 0137: {
-            const uint16_t lowAddress = static_cast<uint16_t>((address10 - 1) & kAddressMask10);
-            state_.lRegister = readOperand10(address10, memoryImage);
-            state_.accumulator = readOperand10(lowAddress, memoryImage);
+            state_.accumulator = readOperandPairHigh(address10, memoryImage);
+            state_.lRegister = readOperandPairLow(address10, memoryImage);
             state_.supportedOpcodeSkeletonCount++;
             state_.executionNote = "DCA " + std::to_string(address10);
             break;

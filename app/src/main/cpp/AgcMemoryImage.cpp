@@ -238,6 +238,18 @@ std::string AgcMemoryImage::ropeLabel(int bank, int offset) const {
     return ropeLabels_[index];
 }
 
+bool AgcMemoryImage::findRopeLabel(const std::string& label, int& bank, int& offset) const {
+    for (size_t index = 0; index < ropeLabels_.size(); ++index) {
+        if (ropeLabels_[index] != label) {
+            continue;
+        }
+        bank = static_cast<int>(index / 1024);
+        offset = static_cast<int>(index % 1024);
+        return true;
+    }
+    return false;
+}
+
 uint16_t AgcMemoryImage::erasableWord(int address) const {
     const size_t index = static_cast<size_t>(address & 03777);
     if (index >= erasable_.size()) {

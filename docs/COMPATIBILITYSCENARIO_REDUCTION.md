@@ -27,10 +27,28 @@
   - `RSET`
   - `KEY REL`
   - `PRO` pulse on channel 32 bit 14
+- exact Luminary 099 DSKY input entry routing for:
+  - a partial exact `KEYRUPT1` / `KEYCOM` / `ACCEPTUP` lead-in on channel-15 key input
+  - exact `LODSAMPT` on channel-15 key input
+  - exact `NOVAC` request capture on channel-15 key input
+  - exact `NOVAC2` / `NOVAC3` / `CORFOUND` / `SETLOC` Executive aftermath on channel-15 key input
+  - exact `WAITLIST` `RESUME` / `NOQRSM` / `NOQBRSM` interrupt-return preparation on channel-15 key input
+  - later `CHARIN` handoff on channel-15 key input
+  - `PROCKEY` on `PRO`
+- momentary release of channel-15 DSKY key input back to zero after the next native step
+- exact execution/source mapping for mapped Luminary 099 DSKY/input labels in the engineer/source debug path
 - DSKY register arbitration for:
   - landing monitor
   - phase summary
   - last-alarm display
+- Apollo-corrected relay-row decoding for visible DSKY register digits/signs when channel-10 output is present
+- corrected Apollo double-word CPU semantics for `DCA` / `DAS` / `DXCH` pair ordering
+- real Apollo `WAITLIST RESUME` CPU semantics for the routed key path
+- more honest interrupt lead-in seeding for the routed key path:
+  - `ARUPT`
+  - `LRUPT`
+  - `BRUPT`
+  - interrupted `BBANK` handoff into `KEYRUPT1`
 
 ## Still owned by CompatibilityScenario
 
@@ -48,8 +66,15 @@
   - fuel
 - visible phase labels
 - non-execution event text such as touchdown or fuel exhaustion
-- local verb/noun buffering and command parsing when Apollo display ownership is absent
-- local alarm acknowledgement fallback when Apollo/peripheral ownership is absent
+- fallback local verb/noun buffering and command parsing when Apollo DSKY entry routing is absent
+- fallback local `KEY REL` / `RSET` / alarm acknowledgement behavior when Apollo/peripheral ownership is absent
+- missing Apollo scheduler/job-switch and final interrupt-return aftermath after the current `KEYRUPT1` / `LODSAMPT` / `NOVAC2` / `SETLOC` / `RESUME` lead-in
+
+## Newly reduced this pass
+
+- the old narrow native dispatch at the final `WAITLIST RESUME` opcode boundary is gone
+- the routed key path now gets a real `RESUME` instruction plus a longer post-`RESUME` Apollo execution window before any fallback dispatch is allowed
+- the routed key path now enters `KEYRUPT1` with a more honest rupture/return register setup instead of only a bank jump into the label
 
 ## Next candidate to remove
 
@@ -57,6 +82,6 @@
 
 Reason:
 
-- It is the next visible user-facing behavior after DSKY display arbitration.
 - The displayed program digits can now be Apollo-driven, and `P64`/`P66` adoption can now follow that output.
-- The remaining blocker is the lack of enough Apollo-owned guidance/peripheral state to eliminate the fallback thresholds entirely.
+- The local DSKY input consequence path has been reduced for the active Luminary 099 path.
+- The remaining blocker is still the lack of enough Apollo-owned Executive scheduling/job-switch/final interrupt-return/peripheral state to eliminate the fallback thresholds honestly.

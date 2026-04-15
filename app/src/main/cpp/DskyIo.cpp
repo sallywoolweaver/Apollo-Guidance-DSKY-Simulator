@@ -77,6 +77,24 @@ std::string decodeTwoDigits(uint16_t relayWord) {
     return digits;
 }
 
+char decodeLeftDigit(uint16_t relayWord) {
+    return decodeRelayDigit(static_cast<uint16_t>((relayWord >> 5) & 037));
+}
+
+char decodeRightDigit(uint16_t relayWord) {
+    return decodeRelayDigit(static_cast<uint16_t>(relayWord & 037));
+}
+
+char decodeSign(const AgcCpu& cpu, uint16_t plusRow, uint16_t minusRow) {
+    if ((cpu.dskyRelayWord(plusRow) & 0400) != 0) {
+        return '+';
+    }
+    if ((cpu.dskyRelayWord(minusRow) & 0400) != 0) {
+        return '-';
+    }
+    return ' ';
+}
+
 std::string compactDigits(const std::string& rawDigits) {
     std::string compact;
     for (const char digit : rawDigits) {
@@ -87,20 +105,28 @@ std::string compactDigits(const std::string& rawDigits) {
     return compact;
 }
 
-std::string decodeSignedRegister(const AgcCpu& cpu, uint16_t plusRow, uint16_t minusRow, uint16_t bridgeRow) {
+std::string decodeRegister1(const AgcCpu& cpu) {
     std::string digits;
-    const uint16_t bridgeWord = cpu.dskyRelayWord(bridgeRow);
-    digits.push_back(decodeRelayDigit(bridgeWord & 037));
-    digits += decodeTwoDigits(cpu.dskyRelayWord(plusRow));
-    digits += decodeTwoDigits(cpu.dskyRelayWord(minusRow));
+    digits.push_back(decodeRightDigit(cpu.dskyRelayWord(8)));
+    digits += decodeTwoDigits(cpu.dskyRelayWord(7));
+    digits += decodeTwoDigits(cpu.dskyRelayWord(6));
+    return std::string(1, decodeSign(cpu, 7, 6)) + digits;
+}
 
-    char sign = ' ';
-    if ((cpu.dskyRelayWord(plusRow) & 0400) != 0) {
-        sign = '+';
-    } else if ((cpu.dskyRelayWord(minusRow) & 0400) != 0) {
-        sign = '-';
-    }
-    return std::string(1, sign) + digits;
+std::string decodeRegister2(const AgcCpu& cpu) {
+    std::string digits;
+    digits += decodeTwoDigits(cpu.dskyRelayWord(5));
+    digits += decodeTwoDigits(cpu.dskyRelayWord(4));
+    digits.push_back(decodeLeftDigit(cpu.dskyRelayWord(3)));
+    return std::string(1, decodeSign(cpu, 5, 4)) + digits;
+}
+
+std::string decodeRegister3(const AgcCpu& cpu) {
+    std::string digits;
+    digits.push_back(decodeRightDigit(cpu.dskyRelayWord(3)));
+    digits += decodeTwoDigits(cpu.dskyRelayWord(2));
+    digits += decodeTwoDigits(cpu.dskyRelayWord(1));
+    return std::string(1, decodeSign(cpu, 2, 1)) + digits;
 }
 }
 
@@ -120,7 +146,7 @@ DskyEvent DskyIo::pressKey(const std::string& key, AgcCpu& cpu) {
     if (key == "PRO") {
         cpu.setInputChannelBits(kChannelProceed, kProceedMask, false);
         pendingProceedRelease_ = true;
-        if (!hasApolloDisplayOutput_) {
+        if (!hasApolloDisplayOutput_ && !apolloInputRoutingEnabled_) {
             statusLine_ = "Proceed";
             return {DskyEventType::ACKNOWLEDGE_ALARM};
         }
@@ -130,15 +156,10 @@ DskyEvent DskyIo::pressKey(const std::string& key, AgcCpu& cpu) {
     const uint16_t keycode = dskyKeycodeForKey(key);
     if (keycode != 0) {
         cpu.setInputChannel(kChannelMnkeyin, keycode);
+        pendingKeycodeRelease_ = true;
     }
 
-    if (hasApolloDisplayOutput_) {
-        if (key == "KEY REL") {
-            return {DskyEventType::KEY_RELEASE};
-        }
-        if (key == "RSET") {
-            return {DskyEventType::RESET};
-        }
+    if (hasApolloDisplayOutput_ || apolloInputRoutingEnabled_) {
         return {};
     }
 
@@ -255,6 +276,10 @@ DskyEvent DskyIo::executePendingCommand(AgcCpu& cpu) {
 }
 
 void DskyIo::releaseMomentaryInputs(AgcCpu& cpu) {
+    if (pendingKeycodeRelease_) {
+        cpu.setInputChannel(kChannelMnkeyin, 0);
+        pendingKeycodeRelease_ = false;
+    }
     if (pendingProceedRelease_) {
         cpu.setInputChannelBits(kChannelProceed, kProceedMask, true);
         pendingProceedRelease_ = false;
@@ -342,6 +367,10 @@ void DskyIo::setDisplayMode(DisplayMode displayMode) {
     refreshRegisters();
 }
 
+void DskyIo::setApolloInputRoutingEnabled(bool enabled) {
+    apolloInputRoutingEnabled_ = enabled;
+}
+
 void DskyIo::setAlarm(
     const std::string& code,
     const std::string& title,
@@ -379,9 +408,9 @@ void DskyIo::syncApolloDisplayFromCpu(const AgcCpu& cpu) {
     const std::string apolloVerb = compactDigits(decodeTwoDigits(cpu.dskyRelayWord(10)));
     const std::string apolloNoun = compactDigits(decodeTwoDigits(cpu.dskyRelayWord(9)));
 
-    const std::string apolloRegister1 = decodeSignedRegister(cpu, 7, 6, 8);
-    const std::string apolloRegister2 = decodeSignedRegister(cpu, 5, 4, 3);
-    const std::string apolloRegister3 = decodeSignedRegister(cpu, 2, 1, 3);
+    const std::string apolloRegister1 = decodeRegister1(cpu);
+    const std::string apolloRegister2 = decodeRegister2(cpu);
+    const std::string apolloRegister3 = decodeRegister3(cpu);
 
     const bool hasApolloDigits =
         cpu.dskyRelayWord(11) != 0 || cpu.dskyRelayWord(10) != 0 || cpu.dskyRelayWord(9) != 0 ||

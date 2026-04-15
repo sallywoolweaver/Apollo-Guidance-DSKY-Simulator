@@ -44,6 +44,10 @@ struct CoreState {
     bool oprErrLight = false;
     bool compActyLight = true;
     bool keyRelLight = false;
+    std::string currentLabel;
+    int programCounterBank = 0;
+    int programCounterOffset = 0;
+    std::string executionNote;
     double altitudeMeters = 2400.0;
     double verticalVelocityMps = -34.0;
     double horizontalVelocityMps = 24.0;

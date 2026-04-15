@@ -65,6 +65,10 @@ jobject toSnapshot(JNIEnv* env, const CoreState& snapshot) {
     setBooleanField(env, object, clazz, "oprErrLight", snapshot.oprErrLight);
     setBooleanField(env, object, clazz, "compActyLight", snapshot.compActyLight);
     setBooleanField(env, object, clazz, "keyRelLight", snapshot.keyRelLight);
+    setStringField(env, object, clazz, "currentLabel", snapshot.currentLabel);
+    setIntField(env, object, clazz, "programCounterBank", snapshot.programCounterBank);
+    setIntField(env, object, clazz, "programCounterOffset", snapshot.programCounterOffset);
+    setStringField(env, object, clazz, "executionNote", snapshot.executionNote);
     return object;
 }
 }  // namespace

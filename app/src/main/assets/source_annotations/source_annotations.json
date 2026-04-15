@@ -6,23 +6,199 @@
       "summary": "Master ignition entry used by several LM programs, including P63, during the span between pre-ignition checks and early burn execution.",
       "commentExcerpt": "THE MASTER IGNITION ROUTINE IS DESIGNED FOR USE BY THE FOLLOWING LEM PROGRAMS:  P12, P40, P42, P61, P63.",
       "commentBlock": "THE MASTER IGNITION ROUTINE IS DESIGNED FOR USE BY THE FOLLOWING LEM PROGRAMS:  P12, P40, P42, P61, P63.\nIT PERFORMS ALL FUNCTIONS IMMEDIATELY ASSOCIATED WITH APS OR DPS IGNITION:  IN PARTICULAR, EVERYTHING LYING\nBETWEEN THE PRE-IGNITION TIME CHECK -- ARE WE WITHIN 45 SECONDS OF TIG? -- AND TIG + 26 SECONDS, WHEN DPS\nPROGRAMS THROTTLE UP.\n\nVARIATIONS AMONG PROGRAMS ARE ACCOMODATED BY MEANS OF TABLES CONTAINING CONSTANTS (FOR AVEGEXIT, FOR\nWAITLIST, FOR PINBALL) AND TCF INSTRUCTIONS.  USERS PLACE THE ADRES OF THE HEAD OF THE APPROPRIATE TABLE\n(OF P61TABLE FOR P61LM, FOR EXAMPLE) IN ERASABLE REGISTER 'WHICH' (E4).  THE IGNITION ROUTINE THEN INDEXES BY\nWHICH TO OBTAIN OR EXECUTE THE PROPER TABLE ENTRY.  THE IGNITION ROUTINE IS INITIATED BY A TCF BURNBABY,\nTHROUGH BANKJUMP IF NECESSARY.  THERE IS NO RETURN.",
-      "tags": ["ignition", "burn", "lm", "p63"]
+      "tags": ["ignition", "burn", "lm", "p63"],
+      "sourceSection": "BURNBABY ignition entry",
+      "mappingNotes": "Curated source context only. This label is not part of the new exact DSKY input map."
     },
     "CHARIN": {
-      "file": "Luminary099/PINBALL_GAME_BUTTONS_AND_LIGHTS.agc",
+      "file": "Luminary099/PINBALL_GAME__BUTTONS_AND_LIGHTS.agc",
       "title": "PINBALL GAME BUTTONS AND LIGHTS",
       "summary": "Pinball is the keyboard/display program that mediates astronaut verb/noun interaction with the AGC.",
       "commentExcerpt": "EACH DEPRESSION OF A KEYBOARD BUTTON ACTIVATES AN INTERRUPT KEYRUPT1 ... AND ENTERS AN EXECUTIVE REQUEST FOR THE KEYBOARD AND DISPLAY PROGRAM (AT 'CHARIN').",
       "commentBlock": "THE KEYBOARD AND DISPLAY SYSTEM PROGRAM OPERATES UNDER EXECUTIVE\nCONTROL AND PROCESSES INFORMATION EXCHANGED BETWEEN THE AGC AND THE\nCOMPUTER OPERATOR.  THE INPUTS TO THE PROGRAM ARE FROM THE KEYBOARD,\nFROM INTERNAL PROGRAM, AND FROM THE UPLINK.\n\nTHE LANGUAGE OF COMMUNICATION WITH THE PROGRAM IS A PAIR OF WORDS\nKNOWN AS VERB AND NOUN.  EACH OF THESE IS REPRESENTED BY A 2 CHARACTER\nDECIMAL NUMBER.  THE VERB CODE INDICATES WHAT ACTION IS TO BE TAKEN, THE\nNOUN CODE INDICATES TO WHAT THIS ACTION IS APPLIED.\n\nEACH DEPRESSION OF A KEYBOARD BUTTON ACTIVATES AN INTERRUPT KEYRUPT1\nAND PLACES THE 5 BIT KEY CODE INTO CHANNEL 15.  KEYRUPT1 PLACES THE KEY\nCODE INTO MPAC, ENTERS AN EXECUTIVE REQUEST FOR THE KEYBOARD AND DISPLAY\nPROGRAM (AT 'CHARIN'), AND EXECUTES A RESUME.",
-      "tags": ["dsky", "keyboard", "pinball", "verb-noun"]
+      "tags": ["dsky", "keyboard", "pinball", "verb-noun"],
+      "sourceSection": "Page 398 / CHARIN entry",
+      "bank": 32,
+      "offset": 1088,
+      "mappingNotes": "Exact bank-local address derived from the imported AP11ROPE.binsource disassembly and matched against the imported source sequence."
+    },
+    "CHARIN2": {
+      "file": "Luminary099/PINBALL_GAME__BUTTONS_AND_LIGHTS.agc",
+      "title": "PINBALL GAME BUTTONS AND LIGHTS",
+      "summary": "Immediate continuation of CHARIN after the display-lock and release checks.",
+      "commentExcerpt": "CHARIN2 XCH MPAC",
+      "commentBlock": "CHARIN2\t\tXCH\tMPAC\n\t\tTS\tCHAR\n\t\tINDEX\tA\n\t\tTC\t+1",
+      "tags": ["dsky", "keyboard", "pinball"],
+      "sourceSection": "Page 398 / CHARIN2 dispatch point",
+      "bank": 32,
+      "offset": 1098,
+      "mappingNotes": "Exact bank-local address derived from the imported AP11ROPE.binsource disassembly and matched against the imported source sequence."
+    },
+    "ENTERJMP": {
+      "file": "Luminary099/PINBALL_GAME__BUTTONS_AND_LIGHTS.agc",
+      "title": "PINBALL GAME BUTTONS AND LIGHTS",
+      "summary": "Pinball jump used for ENTER processing.",
+      "commentExcerpt": "ENTERJMP TC POSTJUMP / CADR ENTER",
+      "commentBlock": "ENTERJMP\tTC\tPOSTJUMP\n\t\tCADR\tENTER",
+      "tags": ["dsky", "enter", "pinball"],
+      "sourceSection": "Page 399 / ENTERJMP",
+      "bank": 32,
+      "offset": 1135,
+      "mappingNotes": "Exact bank-local address derived from the imported AP11ROPE.binsource disassembly and matched against the imported source sequence."
+    },
+    "89TEST": {
+      "file": "Luminary099/PINBALL_GAME__BUTTONS_AND_LIGHTS.agc",
+      "title": "PINBALL GAME BUTTONS AND LIGHTS",
+      "summary": "Pinball digit filter for 8 and 9 handling.",
+      "commentExcerpt": "89TEST CCS DSPCOUNT",
+      "commentBlock": "89TEST\t\tCCS\tDSPCOUNT\n\t\tTC\t+4\n\t\tTC\t+3\n\t\tTC\tENDOFJOB\n\t\tTC\tENDOFJOB",
+      "tags": ["dsky", "digits", "pinball"],
+      "sourceSection": "Page 399 / 89TEST",
+      "bank": 32,
+      "offset": 1137,
+      "mappingNotes": "Exact bank-local address derived from the imported AP11ROPE.binsource disassembly and matched against the imported source sequence."
+    },
+    "NUM": {
+      "file": "Luminary099/PINBALL_GAME__BUTTONS_AND_LIGHTS.agc",
+      "title": "PINBALL GAME BUTTONS AND LIGHTS",
+      "summary": "Pinball numeric-entry routine used by CHARIN dispatch.",
+      "commentExcerpt": "NUM CCS DSPCOUNT",
+      "commentBlock": "NUM\t\tCCS\tDSPCOUNT\n\t\tTC\t+4\n\t\tTC\t+3\n\t\tTC\t+1\n\t\tTC\tENDOFJOB",
+      "tags": ["dsky", "digits", "pinball", "verb-noun"],
+      "sourceSection": "Page 399 / NUM",
+      "bank": 32,
+      "offset": 1151,
+      "mappingNotes": "Exact bank-local address derived from the imported AP11ROPE.binsource disassembly and matched against the imported source sequence."
+    },
+    "PROCKEY": {
+      "file": "Luminary099/PINBALL_GAME__BUTTONS_AND_LIGHTS.agc",
+      "title": "PINBALL GAME BUTTONS AND LIGHTS",
+      "summary": "Proceed-key routine called from T4RUPT-side logic under executive control.",
+      "commentExcerpt": "PROCKEY PERFORMS THE SAME FUNCTION AS VBPROC. IT MUST BE CALLED UNDER EXECUTIVE CONTROL, WITH CHRPRIO.",
+      "commentBlock": "PROCKEY\t\tCAF\tZERO\n\t\tTS\tREQRET\n\t\tCS\tVD1\n\t\tTS\tDSPCOUNT\n\t\tTC\tVBPROC",
+      "tags": ["dsky", "proceed", "pinball"],
+      "sourceSection": "Page 449 / PROCKEY",
+      "bank": 32,
+      "offset": 1834,
+      "mappingNotes": "Exact bank-local address derived from the imported AP11ROPE.binsource disassembly and matched against the imported source sequence."
+    },
+    "VBRESEQ": {
+      "file": "Luminary099/PINBALL_GAME__BUTTONS_AND_LIGHTS.agc",
+      "title": "PINBALL GAME BUTTONS AND LIGHTS",
+      "summary": "Pinball resequence helper used near PROCKEY and related display flow.",
+      "commentExcerpt": "VBRESEQ CS ZERO / TC VBPROC +1",
+      "commentBlock": "VBRESEQ\t\tCS\tZERO\n\t\tTC\tVBPROC +1",
+      "tags": ["dsky", "pinball", "display"],
+      "sourceSection": "Page 449 / VBRESEQ",
+      "bank": 32,
+      "offset": 1839,
+      "mappingNotes": "Exact bank-local address derived from the imported AP11ROPE.binsource disassembly and matched against the imported source sequence."
+    },
+    "VBRELDSP": {
+      "file": "Luminary099/PINBALL_GAME__BUTTONS_AND_LIGHTS.agc",
+      "title": "PINBALL GAME BUTTONS AND LIGHTS",
+      "summary": "Key-release routine that clears display lock and may re-establish pending displays.",
+      "commentExcerpt": "VBRELDSP CS BIT3 / EXTEND / WAND DSALMOUT",
+      "commentBlock": "VBRELDSP\tCS\tBIT3\n\t\tEXTEND\n\t\tWAND\tDSALMOUT\n\t\tCCS\t21/22REG",
+      "tags": ["dsky", "key-release", "pinball", "display"],
+      "sourceSection": "Page 450 / VBRELDSP",
+      "bank": 32,
+      "offset": 1841,
+      "mappingNotes": "Exact bank-local address derived from the imported AP11ROPE.binsource disassembly and matched against the imported source sequence."
+    },
+    "KEYRUPT1": {
+      "file": "Luminary099/KEYRUPT,_UPRUPT.agc",
+      "title": "KEYRUPT, UPRUPT",
+      "summary": "Keyboard interrupt entry that captures the keycode, requests CHARIN, and resumes.",
+      "commentExcerpt": "KEYRUPT1 TS BANKRUPT / XCH Q / TS QRUPT",
+      "commentBlock": "KEYRUPT1\tTS\tBANKRUPT\n\t\tXCH\tQ\n\t\tTS\tQRUPT\n\t\tTC\tLODSAMPT\n\t\tCAF\tLOW5\n\t\tEXTEND\n\t\tRAND\tMNKEYIN",
+      "tags": ["dsky", "keyboard", "interrupt", "pinball"],
+      "sourceSection": "Page 1338 / KEYRUPT1",
+      "bank": 4,
+      "offset": 1724,
+      "mappingNotes": "Exact bank-local address taken from the imported rope overlay and confirmed against the imported KEYRUPT source."
+    },
+    "KEYCOM": {
+      "file": "Luminary099/KEYRUPT,_UPRUPT.agc",
+      "title": "KEYRUPT, UPRUPT",
+      "summary": "Keyboard interrupt sub-step that stores the sampled key state and updates the DSKY flag word.",
+      "commentExcerpt": "KEYCOM TS RUPTREG4",
+      "commentBlock": "KEYCOM\t\tTS\tRUPTREG4\n\t\tCS\tFLAGWRD5\n\t\tMASK\tDSKYFBIT\n\t\tADS\tFLAGWRD5",
+      "tags": ["dsky", "keyboard", "interrupt"],
+      "sourceSection": "Page 1338 / KEYCOM",
+      "bank": 4,
+      "offset": 1731,
+      "mappingNotes": "Exact bank-local address taken from the imported rope overlay and confirmed against the imported KEYRUPT source."
+    },
+    "ACCEPTUP": {
+      "file": "Luminary099/KEYRUPT,_UPRUPT.agc",
+      "title": "KEYRUPT, UPRUPT",
+      "summary": "Keyboard interrupt path that requests CHARIN under executive priority.",
+      "commentExcerpt": "ACCEPTUP CAF CHRPRIO / TC NOVAC / 2CADR CHARIN",
+      "commentBlock": "ACCEPTUP\tCAF\tCHRPRIO\n\t\tTC\tNOVAC\n\t\tEBANK=\tDSPCOUNT\n\t\t2CADR\tCHARIN",
+      "tags": ["dsky", "keyboard", "interrupt", "pinball"],
+      "sourceSection": "Page 1338 / ACCEPTUP",
+      "bank": 4,
+      "offset": 1735,
+      "mappingNotes": "Exact bank-local address taken from the imported rope overlay and confirmed against the imported KEYRUPT source."
+    },
+    "CHARIN_2CADR": {
+      "file": "Luminary099/KEYRUPT,_UPRUPT.agc",
+      "title": "KEYRUPT, UPRUPT",
+      "summary": "Derived helper alias for the exact 2CADR CHARIN request word inside ACCEPTUP.",
+      "commentExcerpt": "2CADR CHARIN",
+      "commentBlock": "ACCEPTUP\tCAF\tCHRPRIO\n\t\tTC\tNOVAC\n\t\tEBANK=\tDSPCOUNT\n\t\t2CADR\tCHARIN",
+      "tags": ["dsky", "keyboard", "interrupt", "derived-alias"],
+      "sourceSection": "Page 1338 / ACCEPTUP 2CADR CHARIN request word",
+      "bank": 4,
+      "offset": 1745,
+      "mappingNotes": "This is not an Apollo label. It is a derived alias attached to the exact 2CADR word so the runtime can identify the executive request site honestly."
+    },
+    "UPOK": {
+      "file": "Luminary099/KEYRUPT,_UPRUPT.agc",
+      "title": "KEYRUPT, UPRUPT",
+      "summary": "UPRUPT path label for a valid uplink character code.",
+      "commentExcerpt": "UPOK CS ELRCODE",
+      "commentBlock": "UPOK\t\tCS\tELRCODE",
+      "tags": ["uplink", "interrupt", "dsky"],
+      "sourceSection": "Page 1339 / UPOK",
+      "bank": 4,
+      "offset": 1784,
+      "mappingNotes": "Exact bank-local address taken from the imported rope overlay and confirmed against the imported UPRUPT source."
+    },
+    "HI10": {
+      "file": "Luminary099/KEYRUPT,_UPRUPT.agc",
+      "title": "KEYRUPT, UPRUPT",
+      "summary": "UPRUPT constant used while checking uplink character redundancy.",
+      "commentExcerpt": "AD HI10",
+      "commentBlock": "AD\tHI10",
+      "tags": ["uplink", "constant", "interrupt"],
+      "sourceSection": "Page 1339 / HI10 constant",
+      "bank": 4,
+      "offset": 1790,
+      "mappingNotes": "Exact bank-local address taken from the imported rope overlay and confirmed against the imported UPRUPT source."
+    },
+    "ELRCODE": {
+      "file": "Luminary099/KEYRUPT,_UPRUPT.agc",
+      "title": "KEYRUPT, UPRUPT",
+      "summary": "Exact ELRCODE constant used in the UPRUPT path.",
+      "commentExcerpt": "UPOK CS ELRCODE",
+      "commentBlock": "UPOK\t\tCS\tELRCODE",
+      "tags": ["uplink", "constant", "interrupt"],
+      "sourceSection": "Page 1339 / ELRCODE constant",
+      "bank": 4,
+      "offset": 1791,
+      "mappingNotes": "Exact bank-local address taken from the imported rope overlay and confirmed against the imported UPRUPT source."
     },
     "NEWPHASE": {
       "file": "Luminary099/LUNAR_LANDING_GUIDANCE_EQUATIONS.agc",
       "title": "LUNAR LANDING GUIDANCE EQUATIONS",
       "summary": "Flight-sequence tables dispatch guidance behavior by WCHPHASE and branch into later landing phases such as STARTP64.",
       "commentExcerpt": "FLIGHT SEQUENCE TABLES ARE ARRANGED BY FUNCTION.   THEY ARE REFERENCED USING AS AN INDEX THE REGISTER WCHPHASE:",
-      "commentBlock": "LUNAR LANDING FLIGHT SEQUENCE TABLES\n\nFLIGHT SEQUENCE TABLES ARE ARRANGED BY FUNCTION.   THEY ARE REFERENCED USING AS AN INDEX THE REGISTER WCHPHASE:\n       WCHPHASE = -1 ---> IGNALG\n       WCHPHASE =  0 ---> BRAKQUAD\n       WCHPHASE =  1 ---> APPRQUAD\n       WCHPHASE =  2 ---> VERTICAL\n\nROUTINES FOR STARTING NEW GUIDANCE PHASES:\n       NEWPHASE           TCF      TTFINCR                               #  BRAKQUAD\n                           TCF      STARTP64                              #  APPRQUAD\n                           TCF      P65START                              #  VERTICAL",
-      "tags": ["guidance", "phase", "landing", "lm"]
+      "commentBlock": "LUNAR LANDING FLIGHT SEQUENCE TABLES\n\nFLIGHT SEQUENCE TABLES ARE ARRANGED BY FUNCTION.   THEY ARE REFERENCED USING AS AN INDEX THE REGISTER WCHPHASE:\n       WCHPHASE = -1 ---> IGNALG\n       WCHPHASE =  0 ---> BRAKQUAD\n       WCHPHASE =  1 ---> APPRQUAD\n       WCHPHASE =  2 ---> VERTICAL\n\nROUTINES FOR STARTING NEW GUIDANCE PHASES:\n       NEWPHASE           TCF      TTFINCR\n                           TCF      STARTP64\n                           TCF      P65START",
+      "tags": ["guidance", "phase", "landing", "lm"],
+      "sourceSection": "NEWPHASE guidance phase-dispatch table",
+      "mappingNotes": "Curated source context only. This label is not part of the new exact DSKY input map."
     },
     "P63LM": {
       "file": "Luminary099/THE_LUNAR_LANDING.agc",
@@ -30,21 +206,25 @@
       "summary": "P63 braking-phase setup initializes descent state, BURNBABY routing, and WCHPHASE for lunar landing.",
       "commentExcerpt": "P63: THE LUNAR LANDING, BRAKING PHASE",
       "commentBlock": "****************************************\nP63: THE LUNAR LANDING, BRAKING PHASE\n****************************************\n\nDO IMU STATUS CHECK ROUTINE R02\nINITIALIZE WHICH FOR BURNBABY\nINITIALIZE DVMON\nINITIALIZE WCHPHASE AND FLPASS0\nREMOVE TRACK-ENABLE DISCRETE.",
-      "tags": ["landing", "p63", "braking", "lm"]
+      "tags": ["landing", "p63", "braking", "lm"],
+      "sourceSection": "P63LM braking-phase entry",
+      "mappingNotes": "Curated source context only. This label is not part of the new exact DSKY input map."
     },
     "VARALARM": {
       "file": "Luminary099/ALARM_AND_ABORT.agc",
       "title": "ALARM AND ABORT",
       "summary": "VARALARM is the program-alarm path that turns on the program alarm light without issuing a display.",
       "commentExcerpt": "VARALARM TURNS ON PROGRAM ALARM LIGHT BUT DOES NOT DISPLAY",
-      "commentBlock": "CALLING SEQUENCE FOR VARALARM\n               CAF     (ALARM)\n               TC      VARALARM\n\nVARALARM TURNS ON PROGRAM ALARM LIGHT BUT DOES NOT DISPLAY\n\nVARALARM           INHINT\n\nTS       L                                      #  SAVE USERS ALARM CODE\nCA       Q                                      #  SAVE USERS Q\nTS       ALMCADR\nTC       PRIOENT\nOCT      14                                    #  DONT MOVE\nTC       ALMCADR                               #  RETURN TO USER",
-      "tags": ["alarm", "program-alarm", "lm", "120x"]
+      "commentBlock": "CALLING SEQUENCE FOR VARALARM\n               CAF     (ALARM)\n               TC      VARALARM\n\nVARALARM TURNS ON PROGRAM ALARM LIGHT BUT DOES NOT DISPLAY\n\nVARALARM           INHINT\n\nTS       L\nCA       Q\nTS       ALMCADR\nTC       PRIOENT\nOCT      14\nTC       ALMCADR",
+      "tags": ["alarm", "program-alarm", "lm", "120x"],
+      "sourceSection": "VARALARM alarm path",
+      "mappingNotes": "Curated source context only. This label is not part of the new exact DSKY input map."
     }
   },
   "files": {
     "Luminary099/ALARM_AND_ABORT.agc": {
       "title": "ALARM AND ABORT",
-      "headerComment": "ALARM and abort-related LM program handling. Initial curated annotations focus on the VARALARM comment block.",
+      "headerComment": "Alarm and abort-related LM program handling. Initial curated annotations focus on the VARALARM comment block.",
       "labels": ["VARALARM"]
     },
     "Luminary099/BURN,_BABY,_BURN_--_MASTER_IGNITION_ROUTINE.agc": {
@@ -52,15 +232,20 @@
       "headerComment": "Master ignition routine for LM burn programs, including P63.",
       "labels": ["BURNBABY"]
     },
+    "Luminary099/KEYRUPT,_UPRUPT.agc": {
+      "title": "KEYRUPT, UPRUPT",
+      "headerComment": "Keyboard and uplink interrupt handlers that capture input and request Pinball work.",
+      "labels": ["KEYRUPT1", "KEYCOM", "ACCEPTUP", "CHARIN_2CADR", "UPOK", "HI10", "ELRCODE"]
+    },
     "Luminary099/LUNAR_LANDING_GUIDANCE_EQUATIONS.agc": {
       "title": "LUNAR LANDING GUIDANCE EQUATIONS",
       "headerComment": "Landing flight-sequence tables and phase-dispatch logic keyed by WCHPHASE.",
       "labels": ["NEWPHASE"]
     },
-    "Luminary099/PINBALL_GAME_BUTTONS_AND_LIGHTS.agc": {
+    "Luminary099/PINBALL_GAME__BUTTONS_AND_LIGHTS.agc": {
       "title": "PINBALL GAME BUTTONS AND LIGHTS",
       "headerComment": "Keyboard and display program for verb/noun interaction, key interrupts, and operator-facing display flow.",
-      "labels": ["CHARIN"]
+      "labels": ["CHARIN", "CHARIN2", "ENTERJMP", "89TEST", "NUM", "PROCKEY", "VBRESEQ", "VBRELDSP"]
     },
     "Luminary099/THE_LUNAR_LANDING.agc": {
       "title": "THE LUNAR LANDING",
@@ -73,17 +258,22 @@
     "alarm": ["VARALARM"],
     "braking": ["P63LM"],
     "burn": ["BURNBABY"],
-    "display": [],
-    "dsky": ["CHARIN"],
+    "constant": ["HI10", "ELRCODE"],
+    "display": ["VBRESEQ", "VBRELDSP"],
+    "dsky": ["CHARIN", "CHARIN2", "ENTERJMP", "89TEST", "NUM", "PROCKEY", "VBRESEQ", "VBRELDSP", "KEYRUPT1", "KEYCOM", "ACCEPTUP", "CHARIN_2CADR", "UPOK"],
     "guidance": ["NEWPHASE"],
     "ignition": ["BURNBABY"],
-    "keyboard": ["CHARIN"],
+    "interrupt": ["KEYRUPT1", "KEYCOM", "ACCEPTUP", "CHARIN_2CADR", "UPOK", "HI10", "ELRCODE"],
+    "keyboard": ["CHARIN", "CHARIN2", "KEYRUPT1", "KEYCOM", "ACCEPTUP", "CHARIN_2CADR"],
+    "key-release": ["VBRELDSP"],
     "landing": ["NEWPHASE", "P63LM"],
     "lm": ["BURNBABY", "NEWPHASE", "P63LM", "VARALARM"],
     "p63": ["BURNBABY", "P63LM"],
     "phase": ["NEWPHASE"],
-    "pinball": ["CHARIN"],
+    "pinball": ["CHARIN", "CHARIN2", "ENTERJMP", "89TEST", "NUM", "PROCKEY", "VBRESEQ", "VBRELDSP", "KEYRUPT1", "ACCEPTUP"],
+    "proceed": ["PROCKEY"],
     "program-alarm": ["VARALARM"],
-    "verb-noun": ["CHARIN"]
+    "uplink": ["UPOK", "HI10", "ELRCODE"],
+    "verb-noun": ["CHARIN", "NUM"]
   }
 }

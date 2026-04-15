@@ -1,0 +1,226 @@
+# Apollo Guidance DSKY Simulator - Master Project Charter
+
+## Core mission
+
+This project exists to preserve Apollo software and run it through an emulator-oriented native core inside an Android app.
+
+The central rule is:
+
+**Keep Apollo code and historical artifacts completely unchanged, import them as read-only historical material, and run as much real Apollo code as possible through the emulator path.**
+
+This is **not** an "Apollo-inspired" simulator project.
+This is **not** a project to rewrite Apollo mission logic into app code.
+This is **not** a project to build a nice shell first and maybe emulate later.
+
+The goal is real Apollo-owned behavior wherever possible.
+
+---
+
+## Non-negotiable rules
+
+### 1. Apollo artifacts must remain untouched
+- Do not rewrite Apollo source.
+- Do not patch Apollo source.
+- Do not normalize Apollo source.
+- Do not clean up Apollo source.
+- Do not paraphrase Apollo mission logic into app logic.
+- If Apollo artifacts are messy, old, awkward, or inconvenient, the emulator/app must adapt around them.
+
+### 2. Apollo artifacts must stay read-only and separate
+Maintain strict separation between:
+
+- `third_party/apollo/...`
+  - untouched Apollo historical artifacts only
+
+- `app/src/main/assets/programs/...`
+  - runtime program-image assets used by the app
+
+- `app/src/main/assets/bootstrap/...`
+  - custom bootstrap/scenario/helper data only
+
+- `app/src/main/assets/source_annotations/...`
+  - annotation/index data only
+
+Do not mix Apollo historical artifacts with helper/bootstrap/generated data.
+
+### 3. Do not overclaim
+- Do not say the app runs Apollo software unless it truly does.
+- Do not count excerpts as full execution.
+- Do not count shell polish as progress toward the real goal.
+- Do not count provenance files alone as complete Apollo import compliance.
+- Always distinguish:
+  - Apollo-owned behavior
+  - emulator-derived behavior
+  - behavior derived from Apollo state
+  - fallback/custom behavior
+
+### 4. Preserve working progress
+Do not regress:
+- stable Android launch/install state
+- stable JNI contract unless absolutely necessary
+- current Apollo-driven DSKY/output gains
+- current alarm ownership gains
+- current emulator-core correctness gains
+- passing tests/build
+
+### 5. Do not waste time on side work before execution is stronger
+Until Apollo execution is much stronger, do not prioritize:
+- shell polish
+- museum/source-browser expansion
+- extra scenario scaffolding
+- visual polish
+- branding work
+- NASA graphics integration
+
+unless a change is very small and directly supports execution/debugging honesty.
+
+---
+
+## Priority stack
+
+### Priority 1 - Keep Apollo artifacts untouched
+This is absolute.
+
+### Priority 2 - Actually run Apollo code through the emulator core
+This is the main purpose.
+The native core should execute as much real Apollo behavior as possible.
+
+### Priority 3 - Make the DSKY fully Apollo-driven
+As much visible DSKY behavior as possible should come from Apollo execution/peripheral/channel behavior, including:
+- digits
+- annunciators
+- command consequences
+- display/arbitration behavior
+- keyboard/proceed flow
+- Pinball-side behavior
+
+### Priority 4 - Make mission/program behavior Apollo-driven
+After DSKY/input ownership improves, move more ownership into Apollo execution for:
+- phase/program transitions
+- alarms
+- mission-state consequences
+- as much launch/descent/landing behavior as Apollo can honestly own
+
+### Priority 5 - Shrink and eventually eliminate `CompatibilityScenario`
+`CompatibilityScenario` is technical debt.
+It must not remain the real mission owner forever.
+
+It should stop owning:
+- mission logic
+- phase transitions
+- alarm behavior
+- telemetry/outcomes
+- DSKY consequences
+
+Shrink it only by replacing it with real Apollo-owned or honest emulator-owned behavior.
+Do not replace one fake layer with another fake layer.
+
+### Priority 6 - Support as many Apollo software families as possible
+Each one remains separate and read-only.
+
+At minimum:
+- Apollo 11 LM `Luminary099`
+- Apollo 11 CM `Comanche055`
+- Apollo 13 LM `LM131R1`
+
+Add more only if the artifacts are clearly available and usable.
+
+### Priority 7 - Keep docs brutally honest
+Always update docs when reality changes.
+Never blur fallback/custom behavior and Apollo execution.
+
+### Priority 8 - Add graphics / cockpit / mission visuals
+Important, but secondary to execution.
+Goal:
+- inside-the-LM feel
+- launch/lunar/landing visuals
+- switch/panel/cockpit presentation
+- not a flat generic app look
+
+### Priority 9 - Use NASA imagery/modeling wherever possible
+For the visual layer:
+- Moon textures/terrain
+- spacecraft references
+- environment assets
+- historically grounded visual design
+
+Visual assets must remain separate from Apollo execution/data.
+
+### Priority 10 - Keep source browser / overlays as an execution/debugging tool
+The source browser is valuable, but secondary.
+
+Best use:
+- map live execution state to exact Apollo source locations
+- show routine names/comments
+- show what is Apollo-owned vs fallback
+- support engineer/debug mode
+
+It should not become museum fluff before execution is strong.
+
+---
+
+## Practical implementation order
+
+### Phase A - Real Apollo execution first
+- import Apollo artifacts read-only
+- keep Apollo artifacts untouched
+- run Apollo code through emulator path
+- expand banking/instruction/peripheral behavior
+- reduce native handoffs and local fallback logic
+
+### Phase B - DSKY/input/peripheral ownership
+- shrink DskyIo fallback logic only where Apollo/peripheral behavior replaces it
+- make more of DSKY/input/program behavior Apollo-owned
+- reduce native dispatch/handoff points further
+
+### Phase C - Mission/program ownership
+- make more of mission behavior Apollo-owned
+- move phase/program transitions only when Apollo/peripheral behavior honestly supports them
+- shrink CompatibilityScenario ownership as a result of those gains
+
+### Phase D - Add visuals around the real execution
+- cockpit/LM framing
+- launch/lunar/landing visuals
+- switches/panels
+- NASA imagery/terrain/modeling where possible
+
+### Phase E - Add source/explainability layers
+- routine/function names
+- source comments
+- source-browser improvements
+- execution-to-source mapping
+- engineer/debug mode improvements
+
+---
+
+## Current standard for decisions
+
+When choosing between two possible tasks, prefer the one that does more of the following:
+
+1. preserves Apollo artifacts unchanged
+2. increases real Apollo-owned execution
+3. reduces DskyIo fallback ownership
+4. increases honest emulator/peripheral ownership
+5. reduces CompatibilityScenario ownership
+6. keeps docs honest
+
+Prefer execution progress over presentation progress.
+
+---
+
+## Hard rule for future work
+
+Do not optimize for a nicer Apollo simulator shell.
+
+Optimize for:
+- preserving Apollo artifacts unchanged
+- importing them properly
+- running them through the native emulator path
+- shrinking fallback/custom ownership by replacing it with Apollo-owned behavior
+- staying honest
+
+---
+
+## One-sentence project definition
+
+**Apollo Guidance DSKY Simulator must keep Apollo artifacts unchanged, run as much real Apollo code as possible through the emulator core, shrink fallback/custom ownership over time, and only then build cockpit visuals, NASA-based graphics, and source overlays around that real execution.**

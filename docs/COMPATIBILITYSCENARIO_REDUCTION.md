@@ -33,7 +33,7 @@
   - exact `NOVAC` request capture on channel-15 key input
   - exact `NOVAC2` / `NOVAC3` / `CORFOUND` / `SETLOC` Executive aftermath on channel-15 key input
   - exact `WAITLIST` `RESUME` / `NOQRSM` / `NOQBRSM` interrupt-return preparation on channel-15 key input
-  - later `CHARIN` handoff on channel-15 key input
+  - later `NEWLOC`/`2CADR`-derived request dispatch on channel-15 key input
   - `PROCKEY` on `PRO`
 - momentary release of channel-15 DSKY key input back to zero after the next native step
 - exact execution/source mapping for mapped Luminary 099 DSKY/input labels in the engineer/source debug path
@@ -75,6 +75,10 @@
 - the old narrow native dispatch at the final `WAITLIST RESUME` opcode boundary is gone
 - the routed key path now gets a real `RESUME` instruction plus a longer post-`RESUME` Apollo execution window before any fallback dispatch is allowed
 - the routed key path now enters `KEYRUPT1` with a more honest rupture/return register setup instead of only a bank jump into the label
+- the later fallback dispatch now waits through a larger routed post-`RESUME` execution budget than before
+- the old hard-coded `CHARIN_2CADR -> CHARIN` fallback is gone
+- the remaining late dispatch now uses Apollo-captured `NEWLOC` / `NEWLOC+1` request state instead of a single hard-coded target label
+- the routed key path now continues stepping after that late dispatch, so more of the post-request consequence can come from Apollo-executed code before returning to the normal simulation loop
 
 ## Next candidate to remove
 

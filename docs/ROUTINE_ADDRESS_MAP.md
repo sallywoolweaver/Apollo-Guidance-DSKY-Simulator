@@ -46,6 +46,7 @@ Those files are derived debugging artifacts, not Apollo artifacts.
 - `SPECTEST` -> bank `02`, offset `1305`, source `EXECUTIVE.agc`, section `SPECTEST`
 - `SETLOC` -> bank `02`, offset `1315`, source `EXECUTIVE.agc`, section `SETLOC`
 - `NEXTCORE` -> bank `02`, offset `1330`, source `EXECUTIVE.agc`, section `NEXTCORE`
+- `SUPDXCHZ` -> bank `02`, offset `3165`, source `EXECUTIVE.agc`, section `SUPDXCHZ`
 - `RESUME` -> bank `02`, offset `3270`, source `WAITLIST.agc`, section `RESUME`
 - `NOQRSM` -> bank `02`, offset `3272`, source `WAITLIST.agc`, section `NOQRSM`
 - `NOQBRSM` -> bank `02`, offset `3274`, source `WAITLIST.agc`, section `NOQBRSM`
@@ -82,8 +83,9 @@ Those files are derived debugging artifacts, not Apollo artifacts.
     - continue through exact `NOVAC2` / `NOVAC3` / `CORFOUND` / `SETLOC`
     - return through exact `WAITLIST` `RESUME` / `NOQRSM` / `NOQBRSM`
     - now execute the exact Apollo `RESUME` special instruction itself
-    - only fall back to exact `CHARIN` later if the requested job still has not become self-dispatching after the extended post-`RESUME` Apollo execution window
-  - this is still a narrow native request fallback, not a complete Apollo Executive scheduler or job switcher
+    - if the requested job still has not become self-dispatching after the extended post-`RESUME` Apollo execution window, the remaining fallback now loads the Apollo-captured `NEWLOC` / `NEWLOC+1` `2CADR` request state into `A+L` and enters exact `SUPDXCHZ` instead of jumping directly to a decoded target label
+    - after that late `2CADR`-derived dispatch, the core keeps stepping for another bounded execution window instead of treating the dispatch boundary as the end of routed Apollo work
+  - this is still a narrow emulator-side request-dispatch primitive wrapped around exact `SUPDXCHZ`, not a complete Apollo Executive scheduler or job switcher
 - Native label lookup:
   - `app/src/main/cpp/AgcMemoryImage.cpp`
   - label -> bank/address lookup is used by the native core before routine entry
@@ -102,6 +104,7 @@ Those files are derived debugging artifacts, not Apollo artifacts.
 - The active key-input path now exercises more real Executive aftermath after request capture before any native dispatch occurs.
 - The active key-input path now exercises more of Apollo's interrupt-return preparation before the remaining dispatch.
 - The active key-input path now uses more honest interrupt lead-in storage and a real Apollo `RESUME` instruction before the remaining fallback can occur.
+- The remaining late dispatch is now sourced from Apollo-captured `2CADR` request words and handed to exact Apollo `SUPDXCHZ` rather than to a single hard-coded `CHARIN` target.
 - The source/debug path can now resolve several exact live Apollo labels to real source files and sections.
 
 ## What remains uncertain or incomplete
@@ -109,6 +112,6 @@ Those files are derived debugging artifacts, not Apollo artifacts.
 - This is still not a full Apollo-owned `KEYRUPT1` interrupt path.
 - This is still not a full Apollo-owned `T4RUPT` proceed path.
 - The emulator still lacks enough interrupt/executive/peripheral behavior for Pinball consequences to be fully Apollo-owned end-to-end after the routine entry point is reached.
-- The current key path now reaches `NOVAC2` / `SETLOC`, the `WAITLIST` `RESUME` entry, and the exact `RESUME` special instruction, but it still uses a narrow later fallback dispatch instead of full Apollo job scheduling and interrupt return.
+- The current key path now reaches `NOVAC2` / `SETLOC`, the `WAITLIST` `RESUME` entry, the exact `RESUME` special instruction, and exact `SUPDXCHZ`, but it still uses a narrow later emulator-side trigger for that transfer instead of full Apollo job scheduling and interrupt return.
 - The active Luminary 099 erasable image is still a custom initializer. It now seeds only the Executive fresh-start words derived from Apollo source that are needed for this narrow path.
 - Some older overlay labels are still helper aliases rather than exact Apollo labels. Those should remain clearly marked as derived aliases, not historical labels.

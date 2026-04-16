@@ -1,6 +1,7 @@
 package com.example.myapplication.app
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.myapplication.bridge.CoreSnapshotMapper.toDskyState
@@ -40,6 +41,10 @@ data class AppUiState(
 )
 
 class ApolloSimViewModel(application: Application) : AndroidViewModel(application) {
+    companion object {
+        private const val TAG = "ApolloLaunch"
+    }
+
     private val core = NativeApolloCore()
     private val programAssetLoader = ProgramAssetLoader(application.assets)
     private val sourceRepository = SourceAnnotationRepository(application.assets)
@@ -54,6 +59,7 @@ class ApolloSimViewModel(application: Application) : AndroidViewModel(applicatio
 
     init {
         core.initCore()
+        Log.i(TAG, "ViewModel.init screen=${_uiState.value.screen} variant=${_uiState.value.selectedVariant.id}")
         viewModelScope.launch {
             while (true) {
                 delay(100L)
@@ -68,7 +74,7 @@ class ApolloSimViewModel(application: Application) : AndroidViewModel(applicatio
         val bytes = programAssetLoader.loadPackage(selected)
         core.loadProgramImage(bytes)
         val snapshot = core.getSnapshot()
-        _uiState.value = AppUiState(
+        val nextState = AppUiState(
             screen = AppScreen.SIMULATOR,
             selectedVariant = selected,
             availableVariants = MissionCatalog.variants,
@@ -79,26 +85,27 @@ class ApolloSimViewModel(application: Application) : AndroidViewModel(applicatio
                 snapshot = snapshot,
             ),
         )
+        applyState("startScenario(${selected.id})", nextState)
     }
 
     fun openAuthenticity() {
-        _uiState.update { it.copy(screen = AppScreen.AUTHENTICITY) }
+        updateState("openAuthenticity") { it.copy(screen = AppScreen.AUTHENTICITY) }
     }
 
     fun openSelection() {
-        _uiState.update { it.copy(screen = AppScreen.SELECTION) }
+        updateState("openSelection") { it.copy(screen = AppScreen.SELECTION) }
     }
 
     fun openSourceBrowser() {
-        _uiState.update { it.copy(screen = AppScreen.SOURCE_BROWSER, sourceBrowserReturnScreen = it.screen) }
+        updateState("openSourceBrowser") { it.copy(screen = AppScreen.SOURCE_BROWSER, sourceBrowserReturnScreen = it.screen) }
     }
 
     fun returnToMenu() {
-        _uiState.update { it.copy(screen = AppScreen.TITLE, paused = true) }
+        updateState("returnToMenu") { it.copy(screen = AppScreen.TITLE, paused = true) }
     }
 
     fun backToSimulator() {
-        _uiState.update { it.copy(screen = it.sourceBrowserReturnScreen) }
+        updateState("backToSimulator") { it.copy(screen = it.sourceBrowserReturnScreen) }
     }
 
     fun adjustThrottle(delta: Double) {
@@ -111,11 +118,11 @@ class ApolloSimViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun togglePause() {
-        _uiState.update { it.copy(paused = !it.paused) }
+        updateState("togglePause") { it.copy(paused = !it.paused) }
     }
 
     fun toggleEngineerMode() {
-        _uiState.update {
+        updateState("toggleEngineerMode") {
             it.copy(
                 sourceAnnotations = it.sourceAnnotations.copy(
                     engineerModeEnabled = !it.sourceAnnotations.engineerModeEnabled,
@@ -125,7 +132,7 @@ class ApolloSimViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun toggleSourcePanel() {
-        _uiState.update {
+        updateState("toggleSourcePanel") {
             it.copy(
                 sourceAnnotations = it.sourceAnnotations.copy(
                     sourcePanelExpanded = !it.sourceAnnotations.sourcePanelExpanded,
@@ -136,7 +143,7 @@ class ApolloSimViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun selectVariant(variantId: String) {
         val selected = _uiState.value.availableVariants.firstOrNull { it.id == variantId } ?: return
-        _uiState.update { it.copy(selectedVariant = selected) }
+        updateState("selectVariant(${selected.id})") { it.copy(selectedVariant = selected) }
     }
 
     fun onKeyLabel(label: String) {
@@ -155,7 +162,7 @@ class ApolloSimViewModel(application: Application) : AndroidViewModel(applicatio
 
     private fun refreshFromCore() {
         val snapshot = core.getSnapshot()
-        _uiState.update {
+        updateState("refreshFromCore") {
             it.copy(
                 screen = if (snapshot.missionResult.isNotEmpty()) AppScreen.DEBRIEF else AppScreen.SIMULATOR,
                 snapshot = snapshot,
@@ -166,6 +173,26 @@ class ApolloSimViewModel(application: Application) : AndroidViewModel(applicatio
                 ),
             )
         }
+    }
+
+    private fun updateState(reason: String, transform: (AppUiState) -> AppUiState) {
+        applyState(reason, transform(_uiState.value))
+    }
+
+    private fun applyState(reason: String, nextState: AppUiState) {
+        val previous = _uiState.value
+        if (
+            previous.screen != nextState.screen ||
+            previous.paused != nextState.paused ||
+            previous.selectedVariant.id != nextState.selectedVariant.id ||
+            previous.snapshot.missionResult != nextState.snapshot.missionResult
+        ) {
+            Log.i(
+                TAG,
+                "state reason=$reason screen=${previous.screen}->${nextState.screen} paused=${previous.paused}->${nextState.paused} variant=${previous.selectedVariant.id}->${nextState.selectedVariant.id} missionResult=${nextState.snapshot.missionResult.ifEmpty { "-" }}",
+            )
+        }
+        _uiState.value = nextState
     }
 
     private fun buildSourceState(

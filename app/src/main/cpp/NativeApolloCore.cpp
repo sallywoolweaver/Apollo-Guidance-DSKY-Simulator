@@ -214,7 +214,7 @@ bool NativeApolloCore::loadProgramImage(const std::vector<uint8_t>& image) {
     }
     cpu_->loadProgramContext(memoryImage_->metadata(), scenarioBootstrap_->data().requestedInitialProgram);
     alarmExecutive_->reset();
-    pendingExecutiveRequestLabel_.clear();
+    pendingExecutiveRequest_ = PendingExecutiveRequest{};
     compatibilityScenario_->resetFromBootstrap(scenarioBootstrap_->data(), memoryImage_->metadata(), *cpu_, *dskyIo_);
     dskyIo_->setApolloInputRoutingEnabled(hasApolloDskyEntryPoints());
     return true;
@@ -227,7 +227,7 @@ void NativeApolloCore::resetScenario() {
     }
     memoryImage_->resetErasable();
     alarmExecutive_->reset();
-    pendingExecutiveRequestLabel_.clear();
+    pendingExecutiveRequest_ = PendingExecutiveRequest{};
     compatibilityScenario_->resetFromBootstrap(scenarioBootstrap_->data(), memoryImage_->metadata(), *cpu_, *dskyIo_);
     dskyIo_->setApolloInputRoutingEnabled(hasApolloDskyEntryPoints());
 }
@@ -327,26 +327,73 @@ void NativeApolloCore::primeApolloKeyruptLeadInState() {
 }
 
 bool NativeApolloCore::dispatchCapturedNovacRequest() {
-    const int requestBank = static_cast<int>(cpu_->switchedFixedBank());
-    const uint16_t requestAddress = cpu_->state().qRegister & 07777;
-    const int requestOffset = normalizeFixedAddressForBank(requestBank, requestAddress);
-    pendingExecutiveRequestLabel_ = memoryImage_->ropeLabel(requestBank, requestOffset);
-    return !pendingExecutiveRequestLabel_.empty();
+    const int requestSiteBank = static_cast<int>(cpu_->switchedFixedBank());
+    const uint16_t requestSiteAddress = cpu_->state().qRegister & 07777;
+    const int requestSiteOffset = normalizeFixedAddressForBank(requestSiteBank, requestSiteAddress);
+
+    PendingExecutiveRequest request;
+    request.active = true;
+    request.requestSiteLabel = memoryImage_->ropeLabel(requestSiteBank, requestSiteOffset);
+    request.targetAddress = memoryImage_->erasableWord(kNewLocAddress) & 07777;
+    request.bankWord = memoryImage_->erasableWord(kNewLocAddress + 1) & 077777;
+
+    if (request.targetAddress < 02000) {
+        request.targetBank = static_cast<uint16_t>((request.bankWord >> 10) & 037);
+        request.targetOffset = static_cast<uint16_t>(request.targetAddress & 01777);
+    } else if (request.targetAddress < 04000) {
+        request.targetBank = static_cast<uint16_t>((request.bankWord >> 10) & 037);
+        request.targetOffset = static_cast<uint16_t>(request.targetAddress & 01777);
+    } else if (request.targetAddress < 06000) {
+        request.targetBank = 02;
+        request.targetOffset = static_cast<uint16_t>(request.targetAddress & 01777);
+    } else {
+        request.targetBank = 03;
+        request.targetOffset = static_cast<uint16_t>(request.targetAddress & 01777);
+    }
+
+    request.targetLabel = memoryImage_->ropeLabel(request.targetBank, request.targetOffset);
+    pendingExecutiveRequest_ = request;
+    return pendingExecutiveRequest_.active;
 }
 
 bool NativeApolloCore::dispatchPendingExecutiveRequest() {
-    if (pendingExecutiveRequestLabel_ == "CHARIN_2CADR") {
-        pendingExecutiveRequestLabel_.clear();
-        return jumpToLabelWithSwitchedBank("CHARIN", 040);
+    if (!pendingExecutiveRequest_.active) {
+        return false;
     }
-    return false;
+
+    cpu_->setAccumulator(pendingExecutiveRequest_.targetAddress);
+    cpu_->setLRegister(pendingExecutiveRequest_.bankWord);
+    if (!jumpToLabel("SUPDXCHZ")) {
+        return false;
+    }
+    pendingExecutiveRequest_ = PendingExecutiveRequest{};
+    return true;
+}
+
+bool NativeApolloCore::continueAfterExecutiveDispatch(int maxInstructions) {
+    for (int instruction = 0; instruction < maxInstructions; ++instruction) {
+        cpu_->stepInstruction(*memoryImage_);
+        const auto& state = cpu_->state();
+        if (state.currentLabel == "CHARIN2") {
+            return true;
+        }
+        if (state.programCounterBank == 02 && state.programCounterOffset == 01101) {
+            if (!dispatchCapturedNovacRequest()) {
+                return false;
+            }
+            if (!dispatchPendingExecutiveRequest()) {
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 bool NativeApolloCore::runInstructionRoutedApolloInput(
     const std::string& entryLabel,
     int maxInstructions
 ) {
-    pendingExecutiveRequestLabel_.clear();
+    pendingExecutiveRequest_ = PendingExecutiveRequest{};
     primeApolloKeyruptLeadInState();
     if (!jumpToLabelWithSwitchedBank(entryLabel, 04)) {
         return false;
@@ -363,7 +410,7 @@ bool NativeApolloCore::runInstructionRoutedApolloInput(
             continue;
         }
 
-        if (pendingExecutiveRequestLabel_.empty()) {
+        if (!pendingExecutiveRequest_.active) {
             if (state.currentLabel == "CHARIN2") {
                 return true;
             }
@@ -375,10 +422,11 @@ bool NativeApolloCore::runInstructionRoutedApolloInput(
         }
     }
 
-    if (!pendingExecutiveRequestLabel_.empty()) {
+    if (pendingExecutiveRequest_.active) {
         if (!dispatchPendingExecutiveRequest()) {
             return false;
         }
+        return continueAfterExecutiveDispatch(512);
     }
     return true;
 }
@@ -404,7 +452,7 @@ bool NativeApolloCore::routeApolloDskyInput(const std::string& key) {
     memoryImage_->writeErasableWord(kMpacAddress, keycode);
     memoryImage_->writeErasableWord(kNewLocAddress, 0);
     memoryImage_->writeErasableWord(kNewLocAddress + 1, 0);
-    return runInstructionRoutedApolloInput("KEYRUPT1", 384);
+    return runInstructionRoutedApolloInput("KEYRUPT1", 768);
 }
 
 }  // namespace apollo

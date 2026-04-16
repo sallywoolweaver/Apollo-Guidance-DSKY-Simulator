@@ -28,6 +28,16 @@ class NativeApolloCore {
     CoreState getSnapshot() const;
 
   private:
+    struct PendingExecutiveRequest {
+        bool active = false;
+        uint16_t targetAddress = 0;
+        uint16_t bankWord = 0;
+        uint16_t targetBank = 0;
+        uint16_t targetOffset = 0;
+        std::string requestSiteLabel;
+        std::string targetLabel;
+    };
+
     bool runInstructionRoutedApolloInput(
         const std::string& entryLabel,
         int maxInstructions
@@ -36,6 +46,7 @@ class NativeApolloCore {
     bool jumpToLabelWithSwitchedBank(const std::string& label, uint16_t switchedBank);
     bool dispatchCapturedNovacRequest();
     bool dispatchPendingExecutiveRequest();
+    bool continueAfterExecutiveDispatch(int maxInstructions);
     static int normalizeFixedAddressForBank(int bank, uint16_t address12);
     static uint16_t fixedAddressForBankOffset(int bank, int offset);
     void primeApolloKeyruptLeadInState();
@@ -48,7 +59,7 @@ class NativeApolloCore {
     DskyIo* dskyIo_;
     AlarmExecutive* alarmExecutive_;
     CompatibilityScenario* compatibilityScenario_;
-    std::string pendingExecutiveRequestLabel_;
+    PendingExecutiveRequest pendingExecutiveRequest_;
 };
 
 }  // namespace apollo

@@ -328,6 +328,97 @@
   - local fallback command parsing and entry buffering still remain when Apollo display/input ownership is absent
   - phase ownership, telemetry, and mission outcomes remain compatibility-owned
 
+## 2026-04-16 - launch-state instrumentation was added and the routed post-`RESUME` Apollo window was extended
+
+- What changed:
+  - added lightweight launch/lifecycle instrumentation in `MainActivity`
+  - added lightweight app-state transition logging in `ApolloSimViewModel`
+  - verified launch state with clean `logcat`, `am start -W`, PID, and `dumpsys activity activities`
+  - increased the routed `KEYRUPT1` execution budget from `384` to `768` instructions before the remaining fallback dispatch is allowed
+- Apollo artifact used:
+  - the active routed path preserved exact Apollo labels through:
+    - `KEYRUPT1`
+    - `LODSAMPT`
+    - `KEYCOM`
+    - `ACCEPTUP`
+    - `NOVAC`
+    - `NOVAC2`
+    - `NOVAC3`
+    - `CORFOUND`
+    - `SETLOC`
+    - `RESUME`
+- What visible runtime behavior became more emulator-driven:
+  - no new device-confirmed DSKY digit/program consequence is claimed from the longer post-`RESUME` window alone
+  - the remaining fallback dispatch now occurs later, after a larger block of real Apollo post-`RESUME` execution
+  - launch-state verification is now grounded in app-side lifecycle/screen logs rather than only external adb guesses
+- What still remains compatibility-driven:
+  - the routed key path still has a later fallback dispatch if the requested job still has not become self-dispatching
+  - full Apollo Executive scheduling, core-set switching, and job ownership after `SETLOC` remain incomplete
+  - local fallback command parsing and entry buffering still remain when Apollo display/input ownership is absent
+  - phase ownership, telemetry, and mission outcomes remain compatibility-owned
+
+## 2026-04-16 - the remaining request fallback now dispatches from captured `NEWLOC` `2CADR` state instead of a hard-coded `CHARIN` jump
+
+- What changed:
+  - preserved the existing exact routed path through:
+    - `KEYRUPT1`
+    - `LODSAMPT`
+    - `KEYCOM`
+    - `ACCEPTUP`
+    - `NOVAC`
+    - `NOVAC2`
+    - `NOVAC3`
+    - `CORFOUND`
+    - `SETLOC`
+    - `RESUME`
+  - replaced the old hard-coded native `CHARIN_2CADR -> CHARIN` fallback with a generic dispatch built from the exact `NEWLOC` / `NEWLOC+1` words captured by Apollo `NOVAC`
+  - the native core now decodes the captured `2CADR` target from Apollo-owned Executive state, restores the bank/superbank word to channel `7` plus `BBANK`-driven fixed-bank state, and dispatches to the decoded target rather than to a single hard-coded label
+  - after that late dispatch, the core now keeps stepping for another bounded execution window instead of treating the dispatch itself as the end of routed Apollo work
+- Apollo artifact used:
+  - `third_party/apollo/apollo11/lm/luminary099/KEYRUPT,_UPRUPT.agc`
+  - `third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc`
+  - `third_party/apollo/apollo11/lm/luminary099/WAITLIST.agc`
+- What visible runtime behavior became more emulator-driven:
+  - no new device-confirmed visible DSKY consequence is claimed from this pass alone
+  - the remaining request fallback is now less fake because it is driven by Apollo-captured `2CADR` request state rather than a hard-coded `CHARIN` destination
+  - the routed key path now continues deeper after the late dispatch, so more post-request interaction flow can come from Apollo-executed code before control returns to the normal simulation loop
+- What still remains compatibility-driven:
+  - the routed key path still uses a late emulator-side dispatch primitive rather than a complete Apollo Executive scheduler/core-set/job-switch implementation
+  - local fallback command parsing and entry buffering still remain when Apollo display/input ownership is absent
+  - phase ownership, telemetry, and mission outcomes remain compatibility-owned
+
+## 2026-04-16 - the late `2CADR` dispatch now enters exact Apollo `SUPDXCHZ`
+
+- What changed:
+  - preserved the existing exact routed path through:
+    - `KEYRUPT1`
+    - `LODSAMPT`
+    - `KEYCOM`
+    - `ACCEPTUP`
+    - `NOVAC`
+    - `NOVAC2`
+    - `NOVAC3`
+    - `CORFOUND`
+    - `SETLOC`
+    - `RESUME`
+  - derived exact Apollo `SUPDXCHZ` at bank `02`, offset `3165`, from `EXECUTIVE.agc` and the Luminary 099 rope image
+  - replaced the remaining direct emulator jump-to-target step with:
+    - load Apollo-captured `NEWLOC` into `A`
+    - load Apollo-captured `NEWLOC+1` into `L`
+    - enter exact Apollo `SUPDXCHZ`
+  - this lets Apollo own the bank/superbank transfer and `TC L` control transfer for the late dispatch instead of the emulator writing those effects directly
+- Apollo artifact used:
+  - `third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc`
+  - `third_party/apollo/apollo11/lm/luminary099/AP11ROPE.binsource`
+- What visible/runtime behavior became more emulator-driven:
+  - no new device-confirmed visible DSKY consequence is claimed from this pass alone
+  - the routed key path now provably exercises more exact Apollo Executive transfer behavior after the captured request state is handed off
+  - the remaining late dispatch primitive is smaller because Apollo `SUPDXCHZ` now owns the actual bank/superbank/job-target transfer
+- What still remains compatibility-driven:
+  - the emulator still decides when to trigger the late request dispatch instead of a full Apollo scheduler/job-switch mechanism deciding it end-to-end
+  - local fallback command parsing and entry buffering still remain when Apollo display/input ownership is absent
+  - phase ownership, telemetry, and mission outcomes remain compatibility-owned
+
 ## Preserved earlier gains
 
 - native CPU rope-label execution tracking

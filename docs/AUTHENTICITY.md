@@ -36,7 +36,7 @@
   - momentary release of channel-15 DSKY key input after the next native step
   - `PRO` as an Apollo-style channel-32 proceed input pulse
   - exact Luminary 099 direct entry into Apollo `PROCKEY` through the native core
-  - a partial exact Luminary 099 `KEYRUPT1` / `LODSAMPT` / `KEYCOM` / `ACCEPTUP` lead-in before exact `NOVAC` request capture, exact `NOVAC2` / `SETLOC` Executive aftermath, exact `WAITLIST` `RESUME` entry work, the exact Apollo `RESUME` special instruction, and a later remaining fallback dispatch built from Apollo-captured `NEWLOC` `2CADR` state rather than a hard-coded `CHARIN` jump
+  - a partial exact Luminary 099 `KEYRUPT1` / `LODSAMPT` / `KEYCOM` / `ACCEPTUP` lead-in before exact `NOVAC` request capture, exact `NOVAC2` / `SETLOC` Executive aftermath, exact `WAITLIST` `RESUME` entry work, the exact Apollo `RESUME` special instruction, and a later remaining fallback dispatch built from Apollo-captured `NEWLOC` `2CADR` state that now enters exact Apollo `SUPDXCHZ`; that remaining handoff is now anchored to exact Apollo `RESUME` plus a bounded post-`RESUME` Apollo window rather than only to a flat instruction timer from key-entry
   - corrected Apollo double-word CPU semantics for `DCA`, `DAS`, and `DXCH`
   - more honest interrupt lead-in seeding for the routed key path via `ARUPT`, `LRUPT`, `BRUPT`, and interrupted `BBANK`
   - Apollo-corrected channel-10 relay-row decoding for visible DSKY register digits and signs
@@ -50,7 +50,7 @@
   - channel 7 superbank state
 - Compatibility fallback now:
   - the full Apollo-owned `KEYRUPT1` / `T4RUPT` interrupt path is still missing
-  - the current key-input path still uses a narrow later emulator-side dispatch primitive rather than full Apollo job scheduling, core-set switching, and interrupt return
+  - the current key-input path still uses a narrow later emulator-side trigger for request dispatch rather than full Apollo job scheduling, core-set switching, and interrupt return
   - the active Luminary 099 erasable image is still a custom initializer; it now seeds only the exact Executive fresh-start words needed for the narrow routed key path
   - local keyboard command parsing and entry buffering still exist only as fallback when Apollo DSKY entry routing is absent
   - local command consequences still exist only as fallback when Apollo relay output and Apollo DSKY entry routing are absent

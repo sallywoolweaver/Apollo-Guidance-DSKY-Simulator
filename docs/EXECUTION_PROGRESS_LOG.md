@@ -419,6 +419,38 @@
   - local fallback command parsing and entry buffering still remain when Apollo display/input ownership is absent
   - phase ownership, telemetry, and mission outcomes remain compatibility-owned
 
+## 2026-04-16 - the remaining late dispatch trigger is now tied to exact Apollo `RESUME` rather than only a flat key-entry timer
+
+- What changed:
+  - preserved the exact routed path through:
+    - `KEYRUPT1`
+    - `LODSAMPT`
+    - `KEYCOM`
+    - `ACCEPTUP`
+    - `NOVAC`
+    - `NOVAC2`
+    - `NOVAC3`
+    - `CORFOUND`
+    - `SETLOC`
+    - `RESUME`
+    - `SUPDXCHZ`
+  - changed the remaining late request trigger so it now prefers an Apollo boundary:
+    - wait until the exact Apollo `RESUME` special instruction has executed
+    - then allow only a bounded post-`RESUME` Apollo execution window before the remaining late request handoff
+  - increased the total routed instruction safety budget from `768` to `1024` so the route still has room to reach the exact `RESUME` boundary and then consume the bounded post-`RESUME` window
+- Apollo artifact used:
+  - `third_party/apollo/apollo11/lm/luminary099/WAITLIST.agc`
+  - `third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc`
+- What visible/runtime behavior became more emulator-driven:
+  - no new device-confirmed visible DSKY consequence is claimed from this pass alone
+  - the remaining late handoff is now less arbitrary because it is anchored to exact Apollo `RESUME` completion rather than only to a flat instruction count from key-entry
+  - more of the keypress aftermath before the remaining handoff is now provably Apollo-owned because the trigger waits for the exact routed interrupt-return boundary first
+- What still remains compatibility-driven:
+  - the emulator still owns the final decision to hand the pending request into `SUPDXCHZ` after the bounded post-`RESUME` window
+  - the Apollo-owned replacement target for that remaining trigger is still the deeper Executive scheduler/job-switch path around `DUMMYJOB` / `ADVAN` / `NUDIRECT` / `CHANJOB`
+  - local fallback command parsing and entry buffering still remain when Apollo display/input ownership is absent
+  - phase ownership, telemetry, and mission outcomes remain compatibility-owned
+
 ## Preserved earlier gains
 
 - native CPU rope-label execution tracking

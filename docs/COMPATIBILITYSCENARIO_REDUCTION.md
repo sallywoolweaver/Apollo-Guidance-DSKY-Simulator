@@ -34,6 +34,7 @@
   - exact `NOVAC2` / `NOVAC3` / `CORFOUND` / `SETLOC` Executive aftermath on channel-15 key input
   - exact `WAITLIST` `RESUME` / `NOQRSM` / `NOQBRSM` interrupt-return preparation on channel-15 key input
   - later `NEWLOC`/`2CADR`-derived request dispatch on channel-15 key input
+  - exact `SUPDXCHZ` transfer on that late request dispatch
   - `PROCKEY` on `PRO`
 - momentary release of channel-15 DSKY key input back to zero after the next native step
 - exact execution/source mapping for mapped Luminary 099 DSKY/input labels in the engineer/source debug path
@@ -79,6 +80,8 @@
 - the old hard-coded `CHARIN_2CADR -> CHARIN` fallback is gone
 - the remaining late dispatch now uses Apollo-captured `NEWLOC` / `NEWLOC+1` request state instead of a single hard-coded target label
 - the routed key path now continues stepping after that late dispatch, so more of the post-request consequence can come from Apollo-executed code before returning to the normal simulation loop
+- the remaining late dispatch now enters exact Apollo `SUPDXCHZ` for bank/superbank/job-target transfer instead of performing that transfer entirely in emulator code
+- the remaining late dispatch trigger now waits for exact Apollo `RESUME` plus a bounded post-`RESUME` Apollo window instead of being only a flat key-entry instruction timer
 
 ## Next candidate to remove
 
@@ -89,3 +92,30 @@ Reason:
 - The displayed program digits can now be Apollo-driven, and `P64`/`P66` adoption can now follow that output.
 - The local DSKY input consequence path has been reduced for the active Luminary 099 path.
 - The remaining blocker is still the lack of enough Apollo-owned Executive scheduling/job-switch/final interrupt-return/peripheral state to eliminate the fallback thresholds honestly.
+
+## Remaining hard-coded technical debt
+
+- Path: `NativeApolloCore::runInstructionRoutedApolloInput` late request trigger
+  - Why it exists: the emulator still does not implement enough Apollo-owned Executive scheduler/job-switch aftermath to know purely from Apollo state when the pending request should be handed from the routed interrupt-return path into the job-dispatch path
+  - Apollo-owned replacement target: exact Executive scheduler boundaries around `DUMMYJOB`, `ADVAN`, `NUDIRECT`, `CHANJOB`, and their core-set/job-switch aftermath
+  - Reduced this batch: yes
+
+- Path: `DskyIo::pressKey` local verb/noun entry buffering and command parsing fallback
+  - Why it exists: Apollo-owned display/input routing is still incomplete when relay output or routed Apollo input ownership is absent
+  - Apollo-owned replacement target: end-to-end Apollo Pinball/input consequence flow from channel input through Executive/Pinball ownership
+  - Reduced this batch: no
+
+- Path: `DskyIo` local `RSET` / `KEY REL` / alarm acknowledgement fallback
+  - Why it exists: Apollo/peripheral ownership still does not fully cover those consequences when Apollo relay output and routed input ownership are absent
+  - Apollo-owned replacement target: real Apollo-owned DSKY/peripheral/alarm consequence paths
+  - Reduced this batch: no
+
+- Path: `CompatibilityScenario` fallback phase/program thresholds for `P63 -> P64` and `P64 -> P66`
+  - Why it exists: the runtime still does not honestly produce enough Apollo-owned mission/program state to replace those transitions end-to-end
+  - Apollo-owned replacement target: Apollo-owned program/phase transitions from native execution and peripheral/display state
+  - Reduced this batch: no
+
+- Path: `CompatibilityScenario` mission/telemetry/outcome ownership
+  - Why it exists: descent physics, mission time, telemetry source values, and outcomes are still not owned by real Apollo execution in the current runtime
+  - Apollo-owned replacement target: broader Apollo-owned runtime execution and peripheral/state ownership, with compatibility logic reduced to bootstrap only
+  - Reduced this batch: no

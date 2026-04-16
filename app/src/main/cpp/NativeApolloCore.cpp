@@ -20,6 +20,7 @@ constexpr uint16_t kNewLocAddress = 065;
 constexpr uint16_t kAruptAddress = 010;
 constexpr uint16_t kLruptAddress = 011;
 constexpr uint16_t kBruptAddress = 017;
+constexpr int kPostResumeDispatchBudget = 256;
 
 struct ProgramPackageSections {
     std::vector<uint8_t> ropeBytes;
@@ -394,6 +395,8 @@ bool NativeApolloCore::runInstructionRoutedApolloInput(
     int maxInstructions
 ) {
     pendingExecutiveRequest_ = PendingExecutiveRequest{};
+    bool sawResume = false;
+    int postResumeInstructions = 0;
     primeApolloKeyruptLeadInState();
     if (!jumpToLabelWithSwitchedBank(entryLabel, 04)) {
         return false;
@@ -408,6 +411,16 @@ bool NativeApolloCore::runInstructionRoutedApolloInput(
                 return false;
             }
             continue;
+        }
+
+        if (state.executionNote == "RESUME") {
+            sawResume = true;
+            postResumeInstructions = 0;
+        } else if (sawResume && pendingExecutiveRequest_.active) {
+            postResumeInstructions += 1;
+            if (postResumeInstructions >= kPostResumeDispatchBudget) {
+                break;
+            }
         }
 
         if (!pendingExecutiveRequest_.active) {
@@ -452,7 +465,7 @@ bool NativeApolloCore::routeApolloDskyInput(const std::string& key) {
     memoryImage_->writeErasableWord(kMpacAddress, keycode);
     memoryImage_->writeErasableWord(kNewLocAddress, 0);
     memoryImage_->writeErasableWord(kNewLocAddress + 1, 0);
-    return runInstructionRoutedApolloInput("KEYRUPT1", 768);
+    return runInstructionRoutedApolloInput("KEYRUPT1", 1024);
 }
 
 }  // namespace apollo

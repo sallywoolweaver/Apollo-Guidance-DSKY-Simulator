@@ -17,6 +17,7 @@ class AgcCpu {
     void jumpToBankOffset(uint16_t bank, uint16_t offset);
     void setSwitchedFixedBank(uint16_t bank);
     void setAccumulator(uint16_t word);
+    void setLRegister(uint16_t word);
     void setInputChannel(uint16_t channel, uint16_t word);
     void setInputChannelBits(uint16_t channel, uint16_t mask, bool asserted);
     void stepInstruction(AgcMemoryImage& memoryImage);

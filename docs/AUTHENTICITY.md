@@ -36,7 +36,7 @@
   - momentary release of channel-15 DSKY key input after the next native step
   - `PRO` as an Apollo-style channel-32 proceed input pulse
   - exact Luminary 099 direct entry into Apollo `PROCKEY` through the native core
-  - a partial exact Luminary 099 `KEYRUPT1` / `LODSAMPT` / `KEYCOM` / `ACCEPTUP` lead-in before exact `NOVAC` request capture, exact `NOVAC2` / `SETLOC` Executive aftermath, exact `WAITLIST` `RESUME` entry work, the exact Apollo `RESUME` special instruction, and a later remaining fallback dispatch built from Apollo-captured `NEWLOC` `2CADR` state that now enters exact Apollo `SUPDXCHZ`; that remaining handoff is now anchored to exact Apollo `RESUME` plus a bounded post-`RESUME` Apollo window rather than only to a flat instruction timer from key-entry
+  - a partial exact Luminary 099 `KEYRUPT1` / `LODSAMPT` / `KEYCOM` / `ACCEPTUP` lead-in before exact `NOVAC` request capture, exact `NOVAC2` / `SETLOC` Executive aftermath, exact `WAITLIST` `RESUME` entry work, the exact Apollo `RESUME` special instruction, and a later remaining fallback dispatch built from Apollo-captured `NEWLOC` `2CADR` state that now enters exact Apollo `SUPDXCHZ`; that remaining handoff is now anchored to exact Apollo `RESUME` plus a bounded post-`RESUME` Apollo window, and post-`SUPDXCHZ` continuation now waits for the Apollo-requested target to become active before the remaining bounded emulator window can end the routed flow
   - corrected Apollo double-word CPU semantics for `DCA`, `DAS`, and `DXCH`
   - more honest interrupt lead-in seeding for the routed key path via `ARUPT`, `LRUPT`, `BRUPT`, and interrupted `BBANK`
   - Apollo-corrected channel-10 relay-row decoding for visible DSKY register digits and signs

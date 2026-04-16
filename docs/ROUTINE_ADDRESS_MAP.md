@@ -85,7 +85,7 @@ Those files are derived debugging artifacts, not Apollo artifacts.
     - now execute the exact Apollo `RESUME` special instruction itself
     - the remaining late handoff now waits for exact Apollo `RESUME` and then a bounded post-`RESUME` Apollo window rather than using only a flat key-entry timer
     - if the requested job still has not become self-dispatching after the extended post-`RESUME` Apollo execution window, the remaining fallback now loads the Apollo-captured `NEWLOC` / `NEWLOC+1` `2CADR` request state into `A+L` and enters exact `SUPDXCHZ` instead of jumping directly to a decoded target label
-    - after that late `2CADR`-derived dispatch, the core keeps stepping for another bounded execution window instead of treating the dispatch boundary as the end of routed Apollo work
+    - after that late `2CADR`-derived dispatch, the core now waits for the Apollo-requested target bank/offset or label to become active and only then allows a smaller bounded post-target execution window
   - this is still a narrow emulator-side request-dispatch primitive wrapped around exact `SUPDXCHZ`, not a complete Apollo Executive scheduler or job switcher
 - Native label lookup:
   - `app/src/main/cpp/AgcMemoryImage.cpp`

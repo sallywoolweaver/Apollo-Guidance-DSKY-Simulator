@@ -82,6 +82,7 @@
 - the routed key path now continues stepping after that late dispatch, so more of the post-request consequence can come from Apollo-executed code before returning to the normal simulation loop
 - the remaining late dispatch now enters exact Apollo `SUPDXCHZ` for bank/superbank/job-target transfer instead of performing that transfer entirely in emulator code
 - the remaining late dispatch trigger now waits for exact Apollo `RESUME` plus a bounded post-`RESUME` Apollo window instead of being only a flat key-entry instruction timer
+- post-`SUPDXCHZ` continuation now waits for the Apollo-requested target to become active before starting a smaller bounded post-target window
 
 ## Next candidate to remove
 
@@ -98,6 +99,11 @@ Reason:
 - Path: `NativeApolloCore::runInstructionRoutedApolloInput` late request trigger
   - Why it exists: the emulator still does not implement enough Apollo-owned Executive scheduler/job-switch aftermath to know purely from Apollo state when the pending request should be handed from the routed interrupt-return path into the job-dispatch path
   - Apollo-owned replacement target: exact Executive scheduler boundaries around `DUMMYJOB`, `ADVAN`, `NUDIRECT`, `CHANJOB`, and their core-set/job-switch aftermath
+  - Reduced this batch: yes
+
+- Path: `NativeApolloCore::continueAfterExecutiveDispatch` post-`SUPDXCHZ` completion trigger
+  - Why it exists: the emulator still does not implement enough Apollo-owned scheduler/job-switch aftermath to know purely from Apollo state when the dispatched job has fully taken ownership
+  - Apollo-owned replacement target: deeper exact Executive scheduler/job-switch aftermath after `SUPDXCHZ`, especially around `DUMMYJOB`, `ADVAN`, `NUDIRECT`, and `CHANJOB`
   - Reduced this batch: yes
 
 - Path: `DskyIo::pressKey` local verb/noun entry buffering and command parsing fallback

@@ -21,6 +21,7 @@ constexpr uint16_t kAruptAddress = 010;
 constexpr uint16_t kLruptAddress = 011;
 constexpr uint16_t kBruptAddress = 017;
 constexpr int kPostResumeDispatchBudget = 256;
+constexpr int kPostDispatchTargetBudget = 128;
 
 struct ProgramPackageSections {
     std::vector<uint8_t> ropeBytes;
@@ -216,6 +217,7 @@ bool NativeApolloCore::loadProgramImage(const std::vector<uint8_t>& image) {
     cpu_->loadProgramContext(memoryImage_->metadata(), scenarioBootstrap_->data().requestedInitialProgram);
     alarmExecutive_->reset();
     pendingExecutiveRequest_ = PendingExecutiveRequest{};
+    activeDispatchTarget_ = ActiveDispatchTarget{};
     compatibilityScenario_->resetFromBootstrap(scenarioBootstrap_->data(), memoryImage_->metadata(), *cpu_, *dskyIo_);
     dskyIo_->setApolloInputRoutingEnabled(hasApolloDskyEntryPoints());
     return true;
@@ -229,6 +231,7 @@ void NativeApolloCore::resetScenario() {
     memoryImage_->resetErasable();
     alarmExecutive_->reset();
     pendingExecutiveRequest_ = PendingExecutiveRequest{};
+    activeDispatchTarget_ = ActiveDispatchTarget{};
     compatibilityScenario_->resetFromBootstrap(scenarioBootstrap_->data(), memoryImage_->metadata(), *cpu_, *dskyIo_);
     dskyIo_->setApolloInputRoutingEnabled(hasApolloDskyEntryPoints());
 }
@@ -362,9 +365,14 @@ bool NativeApolloCore::dispatchPendingExecutiveRequest() {
         return false;
     }
 
+    activeDispatchTarget_.active = true;
+    activeDispatchTarget_.bank = pendingExecutiveRequest_.targetBank;
+    activeDispatchTarget_.offset = pendingExecutiveRequest_.targetOffset;
+    activeDispatchTarget_.label = pendingExecutiveRequest_.targetLabel;
     cpu_->setAccumulator(pendingExecutiveRequest_.targetAddress);
     cpu_->setLRegister(pendingExecutiveRequest_.bankWord);
     if (!jumpToLabel("SUPDXCHZ")) {
+        activeDispatchTarget_ = ActiveDispatchTarget{};
         return false;
     }
     pendingExecutiveRequest_ = PendingExecutiveRequest{};
@@ -372,11 +380,31 @@ bool NativeApolloCore::dispatchPendingExecutiveRequest() {
 }
 
 bool NativeApolloCore::continueAfterExecutiveDispatch(int maxInstructions) {
+    bool reachedTarget = false;
+    int postTargetInstructions = 0;
     for (int instruction = 0; instruction < maxInstructions; ++instruction) {
         cpu_->stepInstruction(*memoryImage_);
         const auto& state = cpu_->state();
         if (state.currentLabel == "CHARIN2") {
+            activeDispatchTarget_ = ActiveDispatchTarget{};
             return true;
+        }
+        if (!reachedTarget && activeDispatchTarget_.active) {
+            const bool labelMatched =
+                !activeDispatchTarget_.label.empty() && state.currentLabel == activeDispatchTarget_.label;
+            const bool addressMatched =
+                state.programCounterBank == activeDispatchTarget_.bank &&
+                state.programCounterOffset == activeDispatchTarget_.offset;
+            if (labelMatched || addressMatched) {
+                reachedTarget = true;
+                postTargetInstructions = 0;
+            }
+        } else if (reachedTarget) {
+            postTargetInstructions += 1;
+            if (postTargetInstructions >= kPostDispatchTargetBudget) {
+                activeDispatchTarget_ = ActiveDispatchTarget{};
+                return true;
+            }
         }
         if (state.programCounterBank == 02 && state.programCounterOffset == 01101) {
             if (!dispatchCapturedNovacRequest()) {
@@ -385,8 +413,11 @@ bool NativeApolloCore::continueAfterExecutiveDispatch(int maxInstructions) {
             if (!dispatchPendingExecutiveRequest()) {
                 return false;
             }
+            reachedTarget = false;
+            postTargetInstructions = 0;
         }
     }
+    activeDispatchTarget_ = ActiveDispatchTarget{};
     return true;
 }
 
@@ -395,6 +426,7 @@ bool NativeApolloCore::runInstructionRoutedApolloInput(
     int maxInstructions
 ) {
     pendingExecutiveRequest_ = PendingExecutiveRequest{};
+    activeDispatchTarget_ = ActiveDispatchTarget{};
     bool sawResume = false;
     int postResumeInstructions = 0;
     primeApolloKeyruptLeadInState();

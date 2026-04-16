@@ -451,6 +451,37 @@
   - local fallback command parsing and entry buffering still remain when Apollo display/input ownership is absent
   - phase ownership, telemetry, and mission outcomes remain compatibility-owned
 
+## 2026-04-16 - post-`SUPDXCHZ` continuation now waits for the Apollo-requested target instead of using only a flat post-dispatch window
+
+- What changed:
+  - preserved the exact routed path through:
+    - `KEYRUPT1`
+    - `LODSAMPT`
+    - `KEYCOM`
+    - `ACCEPTUP`
+    - `NOVAC`
+    - `NOVAC2`
+    - `NOVAC3`
+    - `CORFOUND`
+    - `SETLOC`
+    - `RESUME`
+    - `SUPDXCHZ`
+  - after the late `SUPDXCHZ` handoff, the native core now waits for the Apollo-requested target bank/offset or label to become active
+  - only after that exact requested target is reached does the core allow a smaller bounded post-target execution window
+  - this reduces the old flat post-dispatch timer by making the continuation boundary depend on Apollo-requested target activation
+- Apollo artifact used:
+  - `third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc`
+  - `third_party/apollo/apollo11/lm/luminary099/PINBALL_GAME__BUTTONS_AND_LIGHTS.agc`
+- What visible/runtime behavior became more emulator-driven:
+  - no new device-confirmed visible DSKY consequence is claimed from this pass alone
+  - the routed path now provably waits for the Apollo-requested job target to become active after `SUPDXCHZ` instead of treating the transfer itself as the only meaningful boundary
+  - this makes more of the post-dispatch path Apollo-driven before the remaining emulator-side trigger can end the routed flow
+- What still remains compatibility-driven:
+  - the emulator still decides when to invoke the late `SUPDXCHZ` handoff after the bounded post-`RESUME` window
+  - the Apollo-owned replacement target for that remaining trigger is still the deeper Executive scheduler/job-switch path around `DUMMYJOB` / `ADVAN` / `NUDIRECT` / `CHANJOB`
+  - local fallback command parsing and entry buffering still remain when Apollo display/input ownership is absent
+  - phase ownership, telemetry, and mission outcomes remain compatibility-owned
+
 ## Preserved earlier gains
 
 - native CPU rope-label execution tracking

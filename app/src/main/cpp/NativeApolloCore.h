@@ -28,6 +28,13 @@ class NativeApolloCore {
     CoreState getSnapshot() const;
 
   private:
+    struct ActiveDispatchTarget {
+        bool active = false;
+        uint16_t bank = 0;
+        uint16_t offset = 0;
+        std::string label;
+    };
+
     struct PendingExecutiveRequest {
         bool active = false;
         uint16_t targetAddress = 0;
@@ -60,6 +67,7 @@ class NativeApolloCore {
     AlarmExecutive* alarmExecutive_;
     CompatibilityScenario* compatibilityScenario_;
     PendingExecutiveRequest pendingExecutiveRequest_;
+    ActiveDispatchTarget activeDispatchTarget_;
 };
 
 }  // namespace apollo

@@ -31,7 +31,32 @@
 
 - The app is not yet a strict AGC emulator.
 - The Apollo 11 LM slice now loads a full Apollo-derived rope image from `AP11ROPE.binsource`.
-- The active runtime still depends on compatibility-owned entry, flight, phase, and outcome behavior.
+- The active Luminary 099 key path now routes through exact Apollo labels:
+  - `KEYRUPT1`
+  - `LODSAMPT`
+  - `KEYCOM`
+  - `ACCEPTUP`
+  - `NOVAC`
+  - `NOVAC2`
+  - `NOVAC3`
+  - `CORFOUND`
+  - `SETLOC`
+  - `RESUME`
+- Apollo relay-row output now owns visible:
+  - `PROG`
+  - `VERB`
+  - `NOUN`
+  - register digits/signs
+  - `COMP ACTY`
+  - `KEY REL`
+  - `OPR ERR`
+- The native core now includes:
+  - bank-local rope/fixed/erasable addressing fixes
+  - `TC Q`
+  - corrected double-word pairing for `DCA`, `DAS`, and `DXCH`
+  - real `WAITLIST` `RESUME` instruction handling on the routed key path
+- The remaining blocker is Apollo-owned Executive/core-set/job-switch aftermath after `SETLOC` / `RESUME`.
+- The active runtime still depends on compatibility-owned flight, phase-threshold, telemetry, and outcome behavior.
 
 ## Important docs
 

@@ -99,12 +99,22 @@ Reason:
 - Path: `NativeApolloCore::runInstructionRoutedApolloInput` late request trigger
   - Why it exists: the emulator still does not implement enough Apollo-owned Executive scheduler/job-switch aftermath to know purely from Apollo state when the pending request should be handed from the routed interrupt-return path into the job-dispatch path
   - Apollo-owned replacement target: exact Executive scheduler boundaries around `DUMMYJOB`, `ADVAN`, `NUDIRECT`, `CHANJOB`, and their core-set/job-switch aftermath
-  - Reduced this batch: yes
+  - Reduced this batch: no
 
 - Path: `NativeApolloCore::continueAfterExecutiveDispatch` post-`SUPDXCHZ` completion trigger
   - Why it exists: the emulator still does not implement enough Apollo-owned scheduler/job-switch aftermath to know purely from Apollo state when the dispatched job has fully taken ownership
   - Apollo-owned replacement target: deeper exact Executive scheduler/job-switch aftermath after `SUPDXCHZ`, especially around `DUMMYJOB`, `ADVAN`, `NUDIRECT`, and `CHANJOB`
-  - Reduced this batch: yes
+  - Reduced this batch: no
+
+- Path: exact scheduler-label derivation around `DUMMYJOB` / `ADVAN` / `NUDIRECT` / `CHANJOB`
+  - Why it exists: the current local Luminary 099 bank-02 derived disassembly does not line up cleanly enough with the imported `EXECUTIVE.agc` block before `SUPDXCHZ` to claim exact runtime offsets honestly
+  - Apollo-owned replacement target: a stricter exact listing/disassembly path that can prove the real Luminary 099 addresses for those scheduler labels without modifying Apollo artifacts
+  - Reduced this batch: no
+
+- Path: local `yaYUL` listing tool build
+  - Why it exists: the checked-in Windows build path currently fails on GNU-style statement-expression macros before producing a listing, so it cannot yet be used to derive the next exact scheduler labels in this workspace
+  - Apollo-owned replacement target: a working local assembler/listing path that can assemble or list Luminary 099 without changing the imported Apollo artifacts
+  - Reduced this batch: no
 
 - Path: `DskyIo::pressKey` local verb/noun entry buffering and command parsing fallback
   - Why it exists: Apollo-owned display/input routing is still incomplete when relay output or routed Apollo input ownership is absent

@@ -482,6 +482,36 @@
   - local fallback command parsing and entry buffering still remain when Apollo display/input ownership is absent
   - phase ownership, telemetry, and mission outcomes remain compatibility-owned
 
+## 2026-04-16 - launcher icon integration was completed, but exact scheduler-label derivation is still blocked
+
+- What changed:
+  - wired the provided launcher logo into the Android resource path:
+    - `app/src/main/res/drawable/ic_launcher_logo.png`
+    - adaptive launcher XMLs now point at `@drawable/ic_launcher_logo`
+    - legacy copied PNGs were removed from `mipmap-anydpi` so the Android resource merger can build cleanly
+  - verified the app still assembles, installs, launches, and keeps a live PID on device after the launcher-icon change
+  - investigated the next Executive reduction target around:
+    - `DUMMYJOB`
+    - `ADVAN`
+    - `NUDIRECT`
+    - `CHANJOB`
+  - confirmed that the current bank-02 derived disassembly file does not line up cleanly enough with the imported `EXECUTIVE.agc` source block before `SUPDXCHZ` to stamp those labels as exact runtime addresses honestly
+  - attempted to build a local `yaYUL` binary to generate a stricter Luminary 099 listing, but the checked-in Windows build path failed on GNU-style statement-expression macros before a listing could be produced
+- Apollo artifact used:
+  - `third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc`
+  - `third_party/apollo/apollo11/lm/luminary099/WAITLIST.agc`
+  - `third_party/apollo/apollo11/lm/luminary099/AP11ROPE.binsource`
+  - `third_party/apollo/upstream/virtualagc/yaYUL/*`
+- What visible/runtime behavior became more emulator-driven:
+  - no new scheduler/job-switch behavior is being claimed from this pass
+  - the launcher icon now uses the provided Apollo LM/Earth logo and still builds into the app cleanly
+  - device launch/install stability remained intact after the launcher-icon change
+- What still remains compatibility-driven:
+  - the remaining late `SUPDXCHZ` invocation trigger still exists
+  - the exact Apollo-owned replacement target is still the deeper scheduler/job-switch path around `DUMMYJOB` / `ADVAN` / `NUDIRECT` / `CHANJOB`
+  - local fallback command parsing and entry buffering still remain when Apollo display/input ownership is absent
+  - phase ownership, telemetry, and mission outcomes remain compatibility-owned
+
 ## Preserved earlier gains
 
 - native CPU rope-label execution tracking

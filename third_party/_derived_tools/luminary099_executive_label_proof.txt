@@ -1,0 +1,23 @@
+Luminary 099 Executive label proof
+Source: third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc
+Anchor: SUPDXCHZ @ 02:3165
+
+Validation against already-proven exact labels:
+- NOVAC2: expected 02:1261 actual 02:2561 [MISMATCH]
+- NOVAC3: expected 02:1264 actual 02:2564 [MISMATCH]
+- CORFOUND: expected 02:1272 actual 02:2572 [MISMATCH]
+- SPECTEST: expected 02:1305 actual 02:2605 [MISMATCH]
+- SETLOC: expected 02:1315 actual 02:2615 [MISMATCH]
+- NEXTCORE: expected 02:1330 actual 02:2630 [MISMATCH]
+- SUPDXCHZ: expected 02:3165 actual 02:3165 [OK]
+
+Derived scheduler/job-switch labels:
+- CHANJOB: 02:2642 (source line 219, opcode INHINT)
+- ENDPRCHG: 02:2721 (source line 273, opcode RELINT)
+- JOBSLP1: 02:2732 (source line 286, opcode INHINT)
+- NUCHANG2: 02:2745 (source line 298, opcode INHINT)
+- DUMMYJOB: 02:3142 (source line 469, opcode CS)
+- ADVAN: 02:3150 (source line 475, opcode CCS)
+- SELFBANK: 02:3160 (source line 486, opcode BBCON)
+- NUDIRECT: 02:3161 (source line 488, opcode EXTEND)
+- SUPDXCHZ: 02:3165 (source line 501, opcode XCH)

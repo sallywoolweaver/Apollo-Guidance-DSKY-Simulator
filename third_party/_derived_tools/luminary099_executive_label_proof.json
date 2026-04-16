@@ -1,0 +1,100 @@
+{
+  "source_file": "third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc",
+  "anchor": {
+    "label": "SUPDXCHZ",
+    "offset_octal": "3165"
+  },
+  "validation": {
+    "NOVAC2": {
+      "expected_octal": "1261",
+      "actual_octal": "2561",
+      "matches": false
+    },
+    "NOVAC3": {
+      "expected_octal": "1264",
+      "actual_octal": "2564",
+      "matches": false
+    },
+    "CORFOUND": {
+      "expected_octal": "1272",
+      "actual_octal": "2572",
+      "matches": false
+    },
+    "SPECTEST": {
+      "expected_octal": "1305",
+      "actual_octal": "2605",
+      "matches": false
+    },
+    "SETLOC": {
+      "expected_octal": "1315",
+      "actual_octal": "2615",
+      "matches": false
+    },
+    "NEXTCORE": {
+      "expected_octal": "1330",
+      "actual_octal": "2630",
+      "matches": false
+    },
+    "SUPDXCHZ": {
+      "expected_octal": "3165",
+      "actual_octal": "3165",
+      "matches": true
+    }
+  },
+  "scheduler_labels": {
+    "CHANJOB": {
+      "offset_octal": "2642",
+      "source_line": 219,
+      "opcode": "INHINT",
+      "text": "CHANJOB\t\tINHINT"
+    },
+    "ENDPRCHG": {
+      "offset_octal": "2721",
+      "source_line": 273,
+      "opcode": "RELINT",
+      "text": "ENDPRCHG\tRELINT"
+    },
+    "JOBSLP1": {
+      "offset_octal": "2732",
+      "source_line": 286,
+      "opcode": "INHINT",
+      "text": "JOBSLP1\t\tINHINT"
+    },
+    "NUCHANG2": {
+      "offset_octal": "2745",
+      "source_line": 298,
+      "opcode": "INHINT",
+      "text": "NUCHANG2\tINHINT\t\t\t# QUICK... DONT LET NEWJOB CHANGE TO +0."
+    },
+    "DUMMYJOB": {
+      "offset_octal": "3142",
+      "source_line": 469,
+      "opcode": "CS",
+      "text": "DUMMYJOB\tCS\tZERO\t\t# SET NEWJOB TO -0 FOR IDLING."
+    },
+    "ADVAN": {
+      "offset_octal": "3150",
+      "source_line": 475,
+      "opcode": "CCS",
+      "text": "ADVAN\t\tCCS\tNEWJOB\t\t# IS A NEWJOB ACTIVE?"
+    },
+    "SELFBANK": {
+      "offset_octal": "3160",
+      "source_line": 486,
+      "opcode": "BBCON",
+      "text": "SELFBANK\tBBCON\tSELFCHK"
+    },
+    "NUDIRECT": {
+      "offset_octal": "3161",
+      "source_line": 488,
+      "opcode": "EXTEND",
+      "text": "NUDIRECT\tEXTEND\t\t\t# TURN THE GREEN LIGHT BACK ON."
+    },
+    "SUPDXCHZ": {
+      "offset_octal": "3165",
+      "source_line": 501,
+      "opcode": "XCH",
+      "text": "SUPDXCHZ\tXCH\tL\t\t# BASIC."
+    }
+  }
+}

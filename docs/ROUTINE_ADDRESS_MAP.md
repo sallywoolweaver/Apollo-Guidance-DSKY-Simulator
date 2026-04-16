@@ -114,5 +114,7 @@ Those files are derived debugging artifacts, not Apollo artifacts.
 - This is still not a full Apollo-owned `T4RUPT` proceed path.
 - The emulator still lacks enough interrupt/executive/peripheral behavior for Pinball consequences to be fully Apollo-owned end-to-end after the routine entry point is reached.
 - The current key path now reaches `NOVAC2` / `SETLOC`, the `WAITLIST` `RESUME` entry, the exact `RESUME` special instruction, and exact `SUPDXCHZ`, but it still uses a narrow later emulator-side trigger for that transfer instead of full Apollo job scheduling and interrupt return.
+- The next scheduler labels around that remaining trigger, especially `DUMMYJOB`, `ADVAN`, `NUDIRECT`, and `CHANJOB`, are not yet mapped here as exact runtime addresses because the current local bank-02 derived disassembly does not line up cleanly enough with the imported `EXECUTIVE.agc` source block before `SUPDXCHZ`.
+- A local `yaYUL` listing build was attempted to tighten that proof path, but the checked-in Windows build flow currently fails before it can emit a usable Luminary 099 listing in this workspace.
 - The active Luminary 099 erasable image is still a custom initializer. It now seeds only the Executive fresh-start words derived from Apollo source that are needed for this narrow path.
 - Some older overlay labels are still helper aliases rather than exact Apollo labels. Those should remain clearly marked as derived aliases, not historical labels.

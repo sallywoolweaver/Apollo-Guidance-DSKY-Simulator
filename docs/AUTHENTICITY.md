@@ -36,7 +36,7 @@
   - momentary release of channel-15 DSKY key input after the next native step
   - `PRO` as an Apollo-style channel-32 proceed input pulse
   - exact Luminary 099 direct entry into Apollo `PROCKEY` through the native core
-  - a partial exact Luminary 099 `KEYRUPT1` / `LODSAMPT` / `KEYCOM` / `ACCEPTUP` lead-in before exact `NOVAC` request capture, exact `NOVAC2` / `SETLOC` Executive aftermath, exact `WAITLIST` `RESUME` entry work, the exact Apollo `RESUME` special instruction, and a later remaining fallback dispatch built from Apollo-captured `NEWLOC` `2CADR` state that now enters exact Apollo `SUPDXCHZ`; that remaining handoff is now anchored to exact Apollo `RESUME` plus a bounded post-`RESUME` Apollo window, and post-`SUPDXCHZ` continuation now waits for the Apollo-requested target to become active before the remaining bounded emulator window can end the routed flow
+  - a partial exact Luminary 099 `KEYRUPT1` / `LODSAMPT` / `KEYCOM` / `ACCEPTUP` lead-in before exact `NOVAC` request capture, exact `NOVAC2` / `SETLOC` Executive aftermath, exact `WAITLIST` `RESUME` entry work, the exact Apollo `RESUME` special instruction, and a later remaining fallback dispatch built from Apollo-captured `NEWLOC` `2CADR` state that now enters exact Apollo `SUPDXCHZ`; that remaining handoff is now anchored first to exact Apollo `RESUME`, then to exact proven scheduler/job-switch labels `CHANJOB` / `ADVAN` / `NUDIRECT`, and only then to the older bounded post-`RESUME` emulator timer if those scheduler boundaries are not reached in time; post-`SUPDXCHZ` continuation still waits for the Apollo-requested target to become active, and can now terminate on exact deeper aftermath labels `ENDPRCHG` / `INTRSM`, before the remaining bounded emulator window can end the routed flow
   - corrected Apollo double-word CPU semantics for `DCA`, `DAS`, and `DXCH`
   - more honest interrupt lead-in seeding for the routed key path via `ARUPT`, `LRUPT`, `BRUPT`, and interrupted `BBANK`
   - Apollo-corrected channel-10 relay-row decoding for visible DSKY register digits and signs
@@ -51,6 +51,26 @@
 - Compatibility fallback now:
   - the full Apollo-owned `KEYRUPT1` / `T4RUPT` interrupt path is still missing
   - the current key-input path still uses a narrow later emulator-side trigger for request dispatch rather than full Apollo job scheduling, core-set switching, and interrupt return
+- exact Executive scheduler/job-switch labels now proven by the current bank-split disassembly path:
+  - `CHANJOB`
+  - `ENDPRCHG`
+  - `NUCHANG2`
+  - `DUMMYJOB`
+  - `ADVAN`
+  - `NUDIRECT`
+  - `SUPDXCHZ`
+  - `INTRSM`
+- broader Executive scheduler/job-switch labels beyond that currently proven set remain intentionally unclaimed until the Luminary 099 listing proof path can emit a trustworthy local listing or an equally exact disassembly proof
+- the derived local `yaYUL` build path now produces a helper binary without modifying Apollo artifacts, but Windows still denies executing that helper from this workspace, so exact scheduler-label proof is still incomplete
+- the newer local alignment check now proves:
+  - `CHANJOB` at `01:2706`
+  - `ENDPRCHG` at `01:2765`
+  - `NUCHANG2` at `01:3011`
+  - `DUMMYJOB` at `01:3206`
+  - `ADVAN` at `01:3214`
+  - `NUDIRECT` at `01:3225`
+  - `SUPDXCHZ` at `02:3165`
+  - `INTRSM` at `03:2050`
   - the active Luminary 099 erasable image is still a custom initializer; it now seeds only the exact Executive fresh-start words needed for the narrow routed key path
   - local keyboard command parsing and entry buffering still exist only as fallback when Apollo DSKY entry routing is absent
   - local command consequences still exist only as fallback when Apollo relay output and Apollo DSKY entry routing are absent

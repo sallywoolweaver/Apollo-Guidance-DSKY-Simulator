@@ -1,0 +1,58 @@
+Luminary 099 Executive alignment check
+Source dir: third_party/apollo/apollo11/lm/luminary099
+
+CHANJOB
+  source: third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc
+  disassembly: third_party/_derived_tools/luminary099_bank01_full.dtest.txt
+  source exact sequence: INHINT | EXTEND | ROR SUPERBNK | XCH L | INDEX 0067 | DXCH 0164 | DXCH 0164
+  exact hits: 01,2706
+  opcode-only hits: 01,2706
+
+DUMMYJOB
+  source: third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc
+  disassembly: third_party/_derived_tools/luminary099_bank01_full.dtest.txt
+  source exact sequence: CS 4755 | TS 0067 | RELINT | CS 4752 | EXTEND | WAND 11
+  exact hits: 01,3206
+  opcode-only hits: 01,3206
+
+ADVAN
+  source: third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc
+  disassembly: third_party/_derived_tools/luminary099_bank01_full.dtest.txt
+  source exact sequence: CCS 0067 | TCF 3011 | CA 4752 | TCF 3225 | CA 1361 | TS L | CA 3224 | TCF 5166
+  exact hits: 01,3214
+  opcode-only hits: 01,3214
+
+NUDIRECT
+  source: third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc
+  disassembly: third_party/_derived_tools/luminary099_bank01_full.dtest.txt
+  source exact sequence: EXTEND | WOR 11 | DXCH 0164 | TCF 5165
+  exact hits: 01,3225
+  opcode-only hits: 01,3017, 01,3225
+
+ENDPRCHG
+  source: third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc
+  disassembly: third_party/_derived_tools/luminary099_bank01_full.dtest.txt
+  source exact sequence: RELINT | DXCH 0164 | EXTEND | BZMF 2772 | DXCH Z | CS A | AD 4753 | TS 0164 | TCF 6050
+  exact hits: 01,2765
+  opcode-only hits: 01,2765
+
+NUCHANG2
+  source: third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc
+  disassembly: third_party/_derived_tools/luminary099_bank01_full.dtest.txt
+  source exact sequence: INHINT | CCS 0067 | TCF 3016 | RELINT | TCF 3216 | CA 4752 | EXTEND | WOR 11 | DXCH 0164 | TCF 2712
+  exact hits: 01,3011
+  opcode-only hits: 01,3011
+
+INTRSM
+  source: third_party/apollo/apollo11/lm/luminary099/INTERPRETER.agc
+  disassembly: third_party/_derived_tools/luminary099_bank03_interp_window.dtest.txt
+  source exact sequence: LXCH BB | TCF 6042
+  exact hits: 03,2050
+  opcode-only hits: 03,2034, 03,2050
+
+SUPDXCHZ
+  source: third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc
+  disassembly: third_party/_derived_tools/luminary099_bank02_full.dtest.txt
+  source exact sequence: XCH L | EXTEND | WRITE SUPERBNK | TS BB | TC L
+  exact hits: 02,3165
+  opcode-only hits: 02,3165

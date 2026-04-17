@@ -507,8 +507,148 @@
   - the launcher icon now uses the provided Apollo LM/Earth logo and still builds into the app cleanly
   - device launch/install stability remained intact after the launcher-icon change
 - What still remains compatibility-driven:
+- the remaining late `SUPDXCHZ` invocation trigger still exists
+- the exact Apollo-owned replacement target is still the deeper scheduler/job-switch path around `DUMMYJOB` / `ADVAN` / `NUDIRECT` / `CHANJOB`
+- local fallback command parsing and entry buffering still remain when Apollo display/input ownership is absent
+- phase ownership, telemetry, and mission outcomes remain compatibility-owned
+
+## 2026-04-17 - the derived Luminary 099 listing build path now produces a local `yaYUL.exe`, but listing emission is still blocked by host execution denial
+
+- What changed:
+  - replaced the earlier broken Windows helper path with a derived-only build workflow in:
+    - `tools/build_derived_yayul.ps1`
+  - that helper now:
+    - copies `third_party/apollo/upstream/virtualagc/yaYUL/*` into `third_party/_derived_tools/yaYUL-compat-src/`
+    - patches only the derived `yaYUL.h` `MSC_VS` macros for Windows-compatible compound-literal syntax
+    - imports the Visual Studio environment from `VsDevCmd.bat`
+    - compiles the derived sources with `clang --target=x86_64-pc-windows-msvc`
+    - links them successfully with `clang -fuse-ld=link`
+    - produces `third_party/_derived_tools/yaYUL.exe`
+  - added a derived listing runner in:
+    - `tools/generate_luminary099_listing.ps1`
+  - confirmed the older fallback script:
+    - `tools/prove_luminary099_executive_labels.py`
+    is not trustworthy enough for exact Executive work because its validation mismatches known exact labels
+  - attempted to run the derived `yaYUL.exe` against a copied Luminary 099 source tree, but Windows denied execution with:
+    - `Access is denied`
+- Apollo artifact used:
+  - `third_party/apollo/apollo11/lm/luminary099/MAIN.agc`
+  - `third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc`
+  - `third_party/apollo/apollo11/lm/luminary099/AP11ROPE.binsource`
+  - `third_party/apollo/upstream/virtualagc/yaYUL/*`
+- What visible/runtime behavior became more emulator-driven:
+  - no runtime behavior changed in this pass
+  - no new scheduler/job-switch label is being claimed from this pass
+- What still remains fallback/custom:
+  - no trustworthy Luminary 099 `.lst` or exact Executive extract was emitted yet
+- exact `DUMMYJOB` / `ADVAN` / `NUDIRECT` / `CHANJOB` mappings remain intentionally unclaimed
+- the remaining late `SUPDXCHZ` invocation trigger still exists as documented technical debt
+
+## 2026-04-17 - the local Executive proof path now has a stronger negative alignment check, but still no honest scheduler-label proof
+
+- what changed:
+  - added `tools/check_luminary099_executive_alignment.py`
+  - the script compares exact Executive source opcode sequences against the already-generated `third_party/_derived_tools/luminary099_bank02_full.dtest.txt`
+  - it writes:
+    - `third_party/_derived_tools/luminary099_executive_alignment_check.json`
+    - `third_party/_derived_tools/luminary099_executive_alignment_check.txt`
+- Apollo artifact used:
+  - `third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc`
+  - `third_party/_derived_tools/luminary099_bank02_full.dtest.txt`
+- what the stronger check proved:
+  - exact `SUPDXCHZ` still aligns cleanly at `02:3165`
+  - the current bank-02 disassembly contains no intact exact or opcode-only local sequence matches for:
+    - `CHANJOB`
+    - `DUMMYJOB`
+    - `ADVAN`
+    - `NUDIRECT`
+- what became more emulator-driven:
+  - none
+  - this pass was proof-path work, not a runtime-ownership gain
+- what still remains fallback/custom:
   - the remaining late `SUPDXCHZ` invocation trigger still exists
-  - the exact Apollo-owned replacement target is still the deeper scheduler/job-switch path around `DUMMYJOB` / `ADVAN` / `NUDIRECT` / `CHANJOB`
+  - exact scheduler/job-switch labels around that trigger remain intentionally unclaimed until a trustworthy listing or equivalent exact proof path exists
+
+## 2026-04-17 - bank-split Executive proof now establishes exact scheduler labels, and the late `SUPDXCHZ` invocation trigger now prefers proven Apollo scheduler boundaries
+
+- What changed:
+  - corrected the Executive proof path bank split:
+    - `CHANJOB`, `DUMMYJOB`, `ADVAN`, and `NUDIRECT` are proven from bank `01`
+    - `SUPDXCHZ` remains proven from bank `02`
+  - updated `tools/check_luminary099_executive_alignment.py` so it compares:
+    - bank-01 scheduler labels against `third_party/_derived_tools/luminary099_bank01_full.dtest.txt`
+    - `SUPDXCHZ` against `third_party/_derived_tools/luminary099_bank02_full.dtest.txt`
+  - strengthened the alignment script so it normalizes source-side symbolic operands to the exact disassembly forms used in the imported rope disassembly
+  - the alignment report now proves exact hits for:
+    - `CHANJOB` at `01:2706`
+    - `DUMMYJOB` at `01:3206`
+    - `ADVAN` at `01:3214`
+    - `NUDIRECT` at `01:3225`
+    - `SUPDXCHZ` at `02:3165`
+  - added those exact scheduler labels to the derived runtime rope-label overlay
+  - reduced the remaining late `SUPDXCHZ` invocation trigger:
+    - after exact `RESUME`, the routed key path now prefers exact scheduler/job-switch labels
+      - `CHANJOB`
+      - `ADVAN`
+      - `NUDIRECT`
+    - only if those scheduler boundaries are not reached in time does the old bounded post-`RESUME` timer still fire
+- Apollo artifact used:
+  - `third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc`
+  - `third_party/apollo/apollo11/lm/luminary099/AP11ROPE.binsource`
+  - `third_party/apollo/upstream/virtualagc/Tools/disassemblerAGC/disassemblerAGC.py`
+- What visible/runtime behavior became more emulator-driven:
+  - no new device-confirmed visible DSKY consequence is claimed from this pass alone
+  - the late request-dispatch trigger is now less timer-driven and more Apollo-scheduler-driven because it waits for proven scheduler/job-switch labels before falling back
+  - `EXEC <label>` can now honestly surface the current routed key path inside:
+    - `CHANJOB`
+    - `DUMMYJOB`
+    - `ADVAN`
+    - `NUDIRECT`
+- What still remains fallback/custom:
+  - the late `SUPDXCHZ` invocation trigger still exists as a fallback timer when the proven scheduler labels are not reached in time
+  - the post-`SUPDXCHZ` completion trigger still exists
+  - full Apollo-owned scheduler/core-set/job-switch aftermath after `SUPDXCHZ` is still incomplete
+  - local fallback command parsing and entry buffering still remain when Apollo display/input ownership is absent
+  - phase ownership, telemetry, and mission outcomes remain compatibility-owned
+
+## 2026-04-17 - deeper exact Executive aftermath labels are now proven, and the post-`SUPDXCHZ` completion timer is reduced by exact `ENDPRCHG` / `INTRSM` boundaries
+
+- What changed:
+  - extended the bank-split proof path beyond the current scheduler slice
+  - added exact proof for:
+    - `ENDPRCHG` at `01:2765`
+    - `NUCHANG2` at `01:3011`
+    - `INTRSM` at `03:2050`
+  - generated a bank-03 interpreter disassembly window in:
+    - `third_party/_derived_tools/luminary099_bank03_interp_window.dtest.txt`
+  - extended `tools/check_luminary099_executive_alignment.py` so it now proves labels from:
+    - `EXECUTIVE.agc`
+    - `INTERPRETER.agc`
+    against:
+    - `luminary099_bank01_full.dtest.txt`
+    - `luminary099_bank02_full.dtest.txt`
+    - `luminary099_bank03_interp_window.dtest.txt`
+  - added the new exact labels to the derived runtime rope-label overlay
+  - reduced the post-`SUPDXCHZ` completion timer:
+    - `continueAfterExecutiveDispatch(...)` now returns on exact `ENDPRCHG`
+    - it also returns on exact `INTRSM`
+    - only if those exact completion boundaries are not reached does the older post-target budget still apply
+- Apollo artifact used:
+  - `third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc`
+  - `third_party/apollo/apollo11/lm/luminary099/INTERPRETER.agc`
+  - `third_party/apollo/apollo11/lm/luminary099/AP11ROPE.binsource`
+  - `third_party/apollo/upstream/virtualagc/Tools/disassemblerAGC/disassemblerAGC.py`
+- What visible/runtime behavior became more emulator-driven:
+  - no new device-confirmed visible DSKY consequence is claimed from this pass alone
+  - the post-`SUPDXCHZ` routed path now has exact Apollo-owned completion boundaries in Executive/Interpreter space instead of relying only on target activation plus a flat instruction budget
+  - `EXEC <label>` can now honestly surface:
+    - `ENDPRCHG`
+    - `NUCHANG2`
+    - `INTRSM`
+- What still remains fallback/custom:
+  - the late `SUPDXCHZ` invocation trigger still exists as a fallback timer if the proven scheduler labels are not reached
+  - the post-`SUPDXCHZ` completion budget still exists as fallback when `ENDPRCHG` / `INTRSM` are not reached
+  - deeper Apollo-owned scheduler/core-set/job-switch aftermath beyond these exact labels is still incomplete
   - local fallback command parsing and entry buffering still remain when Apollo display/input ownership is absent
   - phase ownership, telemetry, and mission outcomes remain compatibility-owned
 

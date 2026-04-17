@@ -22,6 +22,16 @@ constexpr uint16_t kLruptAddress = 011;
 constexpr uint16_t kBruptAddress = 017;
 constexpr int kPostResumeDispatchBudget = 256;
 constexpr int kPostDispatchTargetBudget = 128;
+constexpr uint16_t kSupdxchzOffset = 03165 & 01777;
+constexpr uint16_t kSupdxchzPlusOneOffset = 03166 & 01777;
+
+bool isSchedulerDispatchBoundaryLabel(const std::string& label) {
+    return label == "ADVAN" || label == "NUDIRECT" || label == "CHANJOB";
+}
+
+bool isExecutiveCompletionBoundaryLabel(const std::string& label) {
+    return label == "ENDPRCHG" || label == "INTRSM";
+}
 
 struct ProgramPackageSections {
     std::vector<uint8_t> ropeBytes;
@@ -379,6 +389,28 @@ bool NativeApolloCore::dispatchPendingExecutiveRequest() {
     return true;
 }
 
+bool NativeApolloCore::armPendingExecutiveRequestAtCurrentTransferState(bool atSupdxchzPlusOne) {
+    if (!pendingExecutiveRequest_.active) {
+        return false;
+    }
+
+    activeDispatchTarget_.active = true;
+    activeDispatchTarget_.bank = pendingExecutiveRequest_.targetBank;
+    activeDispatchTarget_.offset = pendingExecutiveRequest_.targetOffset;
+    activeDispatchTarget_.label = pendingExecutiveRequest_.targetLabel;
+
+    if (atSupdxchzPlusOne) {
+        cpu_->setAccumulator(pendingExecutiveRequest_.bankWord);
+        cpu_->setLRegister(pendingExecutiveRequest_.targetAddress);
+    } else {
+        cpu_->setAccumulator(pendingExecutiveRequest_.targetAddress);
+        cpu_->setLRegister(pendingExecutiveRequest_.bankWord);
+    }
+
+    pendingExecutiveRequest_ = PendingExecutiveRequest{};
+    return true;
+}
+
 bool NativeApolloCore::continueAfterExecutiveDispatch(int maxInstructions) {
     bool reachedTarget = false;
     int postTargetInstructions = 0;
@@ -386,6 +418,10 @@ bool NativeApolloCore::continueAfterExecutiveDispatch(int maxInstructions) {
         cpu_->stepInstruction(*memoryImage_);
         const auto& state = cpu_->state();
         if (state.currentLabel == "CHARIN2") {
+            activeDispatchTarget_ = ActiveDispatchTarget{};
+            return true;
+        }
+        if (isExecutiveCompletionBoundaryLabel(state.currentLabel)) {
             activeDispatchTarget_ = ActiveDispatchTarget{};
             return true;
         }
@@ -449,6 +485,15 @@ bool NativeApolloCore::runInstructionRoutedApolloInput(
             sawResume = true;
             postResumeInstructions = 0;
         } else if (sawResume && pendingExecutiveRequest_.active) {
+            const bool atSupdxchz = state.programCounterBank == 02 && state.programCounterOffset == kSupdxchzOffset;
+            const bool atSupdxchzPlusOne =
+                state.programCounterBank == 02 && state.programCounterOffset == kSupdxchzPlusOneOffset;
+            if (atSupdxchz || atSupdxchzPlusOne) {
+                if (!armPendingExecutiveRequestAtCurrentTransferState(atSupdxchzPlusOne)) {
+                    return false;
+                }
+                return continueAfterExecutiveDispatch(512);
+            }
             postResumeInstructions += 1;
             if (postResumeInstructions >= kPostResumeDispatchBudget) {
                 break;

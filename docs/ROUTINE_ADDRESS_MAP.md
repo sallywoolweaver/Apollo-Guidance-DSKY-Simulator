@@ -8,6 +8,10 @@ It is not a claim of full Pinball ownership.
 It is not a claim of full interrupt ownership.
 It is a record of exact bank-local addresses derived from untouched Apollo artifacts and then used by the emulator/runtime around those artifacts.
 
+The separate listing/disassembly proof status for unresolved Executive labels is documented in:
+
+- `docs/LISTING_PROOF_PATH.md`
+
 ## Derivation method
 
 The addresses below were derived from imported Apollo artifacts without modifying them:
@@ -46,7 +50,14 @@ Those files are derived debugging artifacts, not Apollo artifacts.
 - `SPECTEST` -> bank `02`, offset `1305`, source `EXECUTIVE.agc`, section `SPECTEST`
 - `SETLOC` -> bank `02`, offset `1315`, source `EXECUTIVE.agc`, section `SETLOC`
 - `NEXTCORE` -> bank `02`, offset `1330`, source `EXECUTIVE.agc`, section `NEXTCORE`
+- `CHANJOB` -> bank `01`, offset `2706`, source `EXECUTIVE.agc`, section `CHANJOB`
+- `ENDPRCHG` -> bank `01`, offset `2765`, source `EXECUTIVE.agc`, section `ENDPRCHG`
+- `NUCHANG2` -> bank `01`, offset `3011`, source `EXECUTIVE.agc`, section `NUCHANG2`
+- `DUMMYJOB` -> bank `01`, offset `3206`, source `EXECUTIVE.agc`, section `DUMMYJOB`
+- `ADVAN` -> bank `01`, offset `3214`, source `EXECUTIVE.agc`, section `ADVAN`
+- `NUDIRECT` -> bank `01`, offset `3225`, source `EXECUTIVE.agc`, section `NUDIRECT`
 - `SUPDXCHZ` -> bank `02`, offset `3165`, source `EXECUTIVE.agc`, section `SUPDXCHZ`
+- `INTRSM` -> bank `03`, offset `2050`, source `INTERPRETER.agc`, section `INTRSM`
 - `RESUME` -> bank `02`, offset `3270`, source `WAITLIST.agc`, section `RESUME`
 - `NOQRSM` -> bank `02`, offset `3272`, source `WAITLIST.agc`, section `NOQRSM`
 - `NOQBRSM` -> bank `02`, offset `3274`, source `WAITLIST.agc`, section `NOQBRSM`
@@ -83,8 +94,17 @@ Those files are derived debugging artifacts, not Apollo artifacts.
     - continue through exact `NOVAC2` / `NOVAC3` / `CORFOUND` / `SETLOC`
     - return through exact `WAITLIST` `RESUME` / `NOQRSM` / `NOQBRSM`
     - now execute the exact Apollo `RESUME` special instruction itself
-    - the remaining late handoff now waits for exact Apollo `RESUME` and then a bounded post-`RESUME` Apollo window rather than using only a flat key-entry timer
+    - the remaining late handoff now waits for exact Apollo `RESUME`
+    - after `RESUME`, it now prefers exact scheduler/job-switch labels:
+      - `CHANJOB`
+      - `ADVAN`
+      - `NUDIRECT`
+    - only if those proven scheduler boundaries are not reached in time does it fall back to the bounded post-`RESUME` timer
     - if the requested job still has not become self-dispatching after the extended post-`RESUME` Apollo execution window, the remaining fallback now loads the Apollo-captured `NEWLOC` / `NEWLOC+1` `2CADR` request state into `A+L` and enters exact `SUPDXCHZ` instead of jumping directly to a decoded target label
+    - after `SUPDXCHZ`, post-dispatch completion can now stop on exact Executive/Interpreter aftermath labels:
+      - `ENDPRCHG`
+      - `INTRSM`
+    - only if those exact completion boundaries are not reached does the older post-target instruction budget still end the routed flow
     - after that late `2CADR`-derived dispatch, the core now waits for the Apollo-requested target bank/offset or label to become active and only then allows a smaller bounded post-target execution window
   - this is still a narrow emulator-side request-dispatch primitive wrapped around exact `SUPDXCHZ`, not a complete Apollo Executive scheduler or job switcher
 - Native label lookup:
@@ -113,8 +133,24 @@ Those files are derived debugging artifacts, not Apollo artifacts.
 - This is still not a full Apollo-owned `KEYRUPT1` interrupt path.
 - This is still not a full Apollo-owned `T4RUPT` proceed path.
 - The emulator still lacks enough interrupt/executive/peripheral behavior for Pinball consequences to be fully Apollo-owned end-to-end after the routine entry point is reached.
-- The current key path now reaches `NOVAC2` / `SETLOC`, the `WAITLIST` `RESUME` entry, the exact `RESUME` special instruction, and exact `SUPDXCHZ`, but it still uses a narrow later emulator-side trigger for that transfer instead of full Apollo job scheduling and interrupt return.
-- The next scheduler labels around that remaining trigger, especially `DUMMYJOB`, `ADVAN`, `NUDIRECT`, and `CHANJOB`, are not yet mapped here as exact runtime addresses because the current local bank-02 derived disassembly does not line up cleanly enough with the imported `EXECUTIVE.agc` source block before `SUPDXCHZ`.
-- A local `yaYUL` listing build was attempted to tighten that proof path, but the checked-in Windows build flow currently fails before it can emit a usable Luminary 099 listing in this workspace.
+- The current key path now reaches `NOVAC2` / `SETLOC`, the `WAITLIST` `RESUME` entry, the exact `RESUME` special instruction, exact scheduler/job-switch labels in bank `01`, and exact `SUPDXCHZ`.
+- The current key path now also has exact proof and runtime visibility for deeper Executive aftermath labels:
+  - `ENDPRCHG` at `01:2765`
+  - `NUCHANG2` at `01:3011`
+  - `INTRSM` at `03:2050`
+- The current remaining trigger is smaller than before, but it is still not full Apollo job scheduling and interrupt return.
+- A stronger local alignment check now exists in:
+  - `third_party/_derived_tools/luminary099_executive_alignment_check.txt`
+  - it confirms exact:
+    - `CHANJOB` at `01:2706`
+    - `ENDPRCHG` at `01:2765`
+    - `NUCHANG2` at `01:3011`
+    - `DUMMYJOB` at `01:3206`
+    - `ADVAN` at `01:3214`
+    - `NUDIRECT` at `01:3225`
+    - `SUPDXCHZ` at `02:3165`
+    - `INTRSM` at `03:2050`
+- A derived local `yaYUL` build path now exists and can produce `third_party/_derived_tools/yaYUL.exe` from a copied upstream source tree without modifying Apollo artifacts.
+- That still does not finish the proof path, because Windows currently denies execution of that derived helper from this workspace with `Access is denied`, so no trustworthy Luminary 099 `.lst` has been emitted yet.
 - The active Luminary 099 erasable image is still a custom initializer. It now seeds only the Executive fresh-start words derived from Apollo source that are needed for this narrow path.
 - Some older overlay labels are still helper aliases rather than exact Apollo labels. Those should remain clearly marked as derived aliases, not historical labels.

@@ -1,0 +1,159 @@
+{
+  "source_dir": "third_party/apollo/apollo11/lm/luminary099",
+  "dtest_files": {
+    "luminary099_bank01_full.dtest.txt": "third_party/_derived_tools/luminary099_bank01_full.dtest.txt",
+    "luminary099_bank03_interp_window.dtest.txt": "third_party/_derived_tools/luminary099_bank03_interp_window.dtest.txt",
+    "luminary099_bank02_full.dtest.txt": "third_party/_derived_tools/luminary099_bank02_full.dtest.txt"
+  },
+  "targets": {
+    "CHANJOB": {
+      "source_file": "third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc",
+      "dtest_file": "third_party/_derived_tools/luminary099_bank01_full.dtest.txt",
+      "source_exact_sequence": [
+        "INHINT",
+        "EXTEND",
+        "ROR SUPERBNK",
+        "XCH L",
+        "INDEX 0067",
+        "DXCH 0164",
+        "DXCH 0164"
+      ],
+      "exact_hits": [
+        "01,2706"
+      ],
+      "opcode_only_hits": [
+        "01,2706"
+      ]
+    },
+    "DUMMYJOB": {
+      "source_file": "third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc",
+      "dtest_file": "third_party/_derived_tools/luminary099_bank01_full.dtest.txt",
+      "source_exact_sequence": [
+        "CS 4755",
+        "TS 0067",
+        "RELINT",
+        "CS 4752",
+        "EXTEND",
+        "WAND 11"
+      ],
+      "exact_hits": [
+        "01,3206"
+      ],
+      "opcode_only_hits": [
+        "01,3206"
+      ]
+    },
+    "ADVAN": {
+      "source_file": "third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc",
+      "dtest_file": "third_party/_derived_tools/luminary099_bank01_full.dtest.txt",
+      "source_exact_sequence": [
+        "CCS 0067",
+        "TCF 3011",
+        "CA 4752",
+        "TCF 3225",
+        "CA 1361",
+        "TS L",
+        "CA 3224",
+        "TCF 5166"
+      ],
+      "exact_hits": [
+        "01,3214"
+      ],
+      "opcode_only_hits": [
+        "01,3214"
+      ]
+    },
+    "NUDIRECT": {
+      "source_file": "third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc",
+      "dtest_file": "third_party/_derived_tools/luminary099_bank01_full.dtest.txt",
+      "source_exact_sequence": [
+        "EXTEND",
+        "WOR 11",
+        "DXCH 0164",
+        "TCF 5165"
+      ],
+      "exact_hits": [
+        "01,3225"
+      ],
+      "opcode_only_hits": [
+        "01,3017",
+        "01,3225"
+      ]
+    },
+    "ENDPRCHG": {
+      "source_file": "third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc",
+      "dtest_file": "third_party/_derived_tools/luminary099_bank01_full.dtest.txt",
+      "source_exact_sequence": [
+        "RELINT",
+        "DXCH 0164",
+        "EXTEND",
+        "BZMF 2772",
+        "DXCH Z",
+        "CS A",
+        "AD 4753",
+        "TS 0164",
+        "TCF 6050"
+      ],
+      "exact_hits": [
+        "01,2765"
+      ],
+      "opcode_only_hits": [
+        "01,2765"
+      ]
+    },
+    "NUCHANG2": {
+      "source_file": "third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc",
+      "dtest_file": "third_party/_derived_tools/luminary099_bank01_full.dtest.txt",
+      "source_exact_sequence": [
+        "INHINT",
+        "CCS 0067",
+        "TCF 3016",
+        "RELINT",
+        "TCF 3216",
+        "CA 4752",
+        "EXTEND",
+        "WOR 11",
+        "DXCH 0164",
+        "TCF 2712"
+      ],
+      "exact_hits": [
+        "01,3011"
+      ],
+      "opcode_only_hits": [
+        "01,3011"
+      ]
+    },
+    "INTRSM": {
+      "source_file": "third_party/apollo/apollo11/lm/luminary099/INTERPRETER.agc",
+      "dtest_file": "third_party/_derived_tools/luminary099_bank03_interp_window.dtest.txt",
+      "source_exact_sequence": [
+        "LXCH BB",
+        "TCF 6042"
+      ],
+      "exact_hits": [
+        "03,2050"
+      ],
+      "opcode_only_hits": [
+        "03,2034",
+        "03,2050"
+      ]
+    },
+    "SUPDXCHZ": {
+      "source_file": "third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc",
+      "dtest_file": "third_party/_derived_tools/luminary099_bank02_full.dtest.txt",
+      "source_exact_sequence": [
+        "XCH L",
+        "EXTEND",
+        "WRITE SUPERBNK",
+        "TS BB",
+        "TC L"
+      ],
+      "exact_hits": [
+        "02,3165"
+      ],
+      "opcode_only_hits": [
+        "02,3165"
+      ]
+    }
+  }
+}

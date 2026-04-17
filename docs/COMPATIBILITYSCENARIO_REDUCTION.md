@@ -83,6 +83,15 @@
 - the remaining late dispatch now enters exact Apollo `SUPDXCHZ` for bank/superbank/job-target transfer instead of performing that transfer entirely in emulator code
 - the remaining late dispatch trigger now waits for exact Apollo `RESUME` plus a bounded post-`RESUME` Apollo window instead of being only a flat key-entry instruction timer
 - post-`SUPDXCHZ` continuation now waits for the Apollo-requested target to become active before starting a smaller bounded post-target window
+- the remaining late dispatch trigger now prefers exact Apollo scheduler/job-switch labels:
+  - `CHANJOB`
+  - `ADVAN`
+  - `NUDIRECT`
+  before the older bounded post-`RESUME` timer is allowed to fire
+- post-`SUPDXCHZ` completion can now stop on exact deeper Apollo aftermath labels:
+  - `ENDPRCHG`
+  - `INTRSM`
+  before the older post-target instruction budget is allowed to fire
 
 ## Next candidate to remove
 
@@ -99,22 +108,27 @@ Reason:
 - Path: `NativeApolloCore::runInstructionRoutedApolloInput` late request trigger
   - Why it exists: the emulator still does not implement enough Apollo-owned Executive scheduler/job-switch aftermath to know purely from Apollo state when the pending request should be handed from the routed interrupt-return path into the job-dispatch path
   - Apollo-owned replacement target: exact Executive scheduler boundaries around `DUMMYJOB`, `ADVAN`, `NUDIRECT`, `CHANJOB`, and their core-set/job-switch aftermath
-  - Reduced this batch: no
+  - Reduced this batch: yes; the trigger now prefers exact proven scheduler labels before falling back to the older bounded post-`RESUME` timer
 
 - Path: `NativeApolloCore::continueAfterExecutiveDispatch` post-`SUPDXCHZ` completion trigger
   - Why it exists: the emulator still does not implement enough Apollo-owned scheduler/job-switch aftermath to know purely from Apollo state when the dispatched job has fully taken ownership
   - Apollo-owned replacement target: deeper exact Executive scheduler/job-switch aftermath after `SUPDXCHZ`, especially around `DUMMYJOB`, `ADVAN`, `NUDIRECT`, and `CHANJOB`
-  - Reduced this batch: no
+  - Reduced this batch: yes; exact `ENDPRCHG` and `INTRSM` now terminate the routed post-dispatch window before the fallback post-target budget is allowed to fire
 
 - Path: exact scheduler-label derivation around `DUMMYJOB` / `ADVAN` / `NUDIRECT` / `CHANJOB`
-  - Why it exists: the current local Luminary 099 bank-02 derived disassembly does not line up cleanly enough with the imported `EXECUTIVE.agc` block before `SUPDXCHZ` to claim exact runtime offsets honestly
+  - Why it exists: broader Executive work still needs more exact labels than the currently proven set, and the local `.lst` path is still blocked
   - Apollo-owned replacement target: a stricter exact listing/disassembly path that can prove the real Luminary 099 addresses for those scheduler labels without modifying Apollo artifacts
-  - Reduced this batch: no
+  - Reduced this batch: yes; the bank-split disassembly proof now proves exact `CHANJOB`, `DUMMYJOB`, `ADVAN`, `NUDIRECT`, and `SUPDXCHZ`
+
+- Path: deeper exact Executive aftermath derivation beyond the current scheduler slice
+  - Why it exists: the routed key path still needs more Apollo-owned completion boundaries after scheduler/job-switch transfer
+  - Apollo-owned replacement target: exact deeper labels after `SUPDXCHZ` and their runtime consequences
+  - Reduced this batch: yes; exact `ENDPRCHG`, `NUCHANG2`, and `INTRSM` are now proven and mapped
 
 - Path: local `yaYUL` listing tool build
-  - Why it exists: the checked-in Windows build path currently fails on GNU-style statement-expression macros before producing a listing, so it cannot yet be used to derive the next exact scheduler labels in this workspace
+  - Why it exists: the derived Windows build path now succeeds far enough to produce `third_party/_derived_tools/yaYUL.exe`, but the host still denies executing that derived helper from this workspace, so it still cannot emit a listing
   - Apollo-owned replacement target: a working local assembler/listing path that can assemble or list Luminary 099 without changing the imported Apollo artifacts
-  - Reduced this batch: no
+  - Reduced this batch: yes
 
 - Path: `DskyIo::pressKey` local verb/noun entry buffering and command parsing fallback
   - Why it exists: Apollo-owned display/input routing is still incomplete when relay output or routed Apollo input ownership is absent

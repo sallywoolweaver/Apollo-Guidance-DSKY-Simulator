@@ -52,6 +52,8 @@ Those files are derived debugging artifacts, not Apollo artifacts.
 - `NEXTCORE` -> bank `02`, offset `1330`, source `EXECUTIVE.agc`, section `NEXTCORE`
 - `CHANJOB` -> bank `01`, offset `2706`, source `EXECUTIVE.agc`, section `CHANJOB`
 - `ENDPRCHG` -> bank `01`, offset `2765`, source `EXECUTIVE.agc`, section `ENDPRCHG`
+- `JOBSLP1` -> bank `01`, offset `2776`, source `EXECUTIVE.agc`, section `JOBSLP1`
+- `JOBSLP2` -> bank `01`, offset `3007`, source `EXECUTIVE.agc`, section `JOBSLP2`
 - `NUCHANG2` -> bank `01`, offset `3011`, source `EXECUTIVE.agc`, section `NUCHANG2`
 - `DUMMYJOB` -> bank `01`, offset `3206`, source `EXECUTIVE.agc`, section `DUMMYJOB`
 - `ADVAN` -> bank `01`, offset `3214`, source `EXECUTIVE.agc`, section `ADVAN`
@@ -99,7 +101,10 @@ Those files are derived debugging artifacts, not Apollo artifacts.
     - the remaining late dispatch now waits for exact natural Apollo transfer state:
       - `SUPDXCHZ` entry
       - `SUPDXCHZ +1` entry
-    - only if those exact transfer states are not reached in time does it fall back to the bounded post-`RESUME` timer
+    - there is no longer a separate late invocation timer after `RESUME`
+    - the routed key path now keeps stepping on exact Apollo-owned state until:
+      - exact natural `SUPDXCHZ` / `SUPDXCHZ +1` transfer state is reached
+      - or the overall routed-step budget ends and the remaining fallback primitive is forced
     - if the requested job still has not become self-dispatching after the extended post-`RESUME` Apollo execution window, the remaining fallback now loads the Apollo-captured `NEWLOC` / `NEWLOC+1` `2CADR` request state into `A+L` and enters exact `SUPDXCHZ` instead of jumping directly to a decoded target label
     - after `SUPDXCHZ`, post-dispatch completion can now stop on exact Executive/Interpreter aftermath labels:
       - `ENDPRCHG`
@@ -136,14 +141,18 @@ Those files are derived debugging artifacts, not Apollo artifacts.
 - The current key path now reaches `NOVAC2` / `SETLOC`, the `WAITLIST` `RESUME` entry, the exact `RESUME` special instruction, exact scheduler/job-switch labels in bank `01`, and exact `SUPDXCHZ`.
 - The current key path now also has exact proof and runtime visibility for deeper Executive aftermath labels:
   - `ENDPRCHG` at `01:2765`
+  - `JOBSLP1` at `01:2776`
+  - `JOBSLP2` at `01:3007`
   - `NUCHANG2` at `01:3011`
   - `INTRSM` at `03:2050`
-- The current remaining invocation trigger is smaller than before because it now waits for exact natural `SUPDXCHZ` / `SUPDXCHZ +1` transfer state instead of dispatching at the earlier scheduler labels, but it is still not full Apollo job scheduling and interrupt return.
+- The current remaining invocation trigger is smaller than before because it now waits for exact natural `SUPDXCHZ` / `SUPDXCHZ +1` transfer state instead of dispatching at the earlier scheduler labels, and the old separate post-`RESUME` invocation timer is gone, but it is still not full Apollo job scheduling and interrupt return.
 - A stronger local alignment check now exists in:
   - `third_party/_derived_tools/luminary099_executive_alignment_check.txt`
   - it confirms exact:
     - `CHANJOB` at `01:2706`
     - `ENDPRCHG` at `01:2765`
+    - `JOBSLP1` at `01:2776`
+    - `JOBSLP2` at `01:3007`
     - `NUCHANG2` at `01:3011`
     - `DUMMYJOB` at `01:3206`
     - `ADVAN` at `01:3214`

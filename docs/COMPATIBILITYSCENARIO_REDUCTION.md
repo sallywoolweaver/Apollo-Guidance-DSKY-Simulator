@@ -96,6 +96,8 @@
   - `SUPDXCHZ`
   - `SUPDXCHZ +1`
   instead of dispatching at the first proven scheduler-label boundary
+- the old separate late invocation timer after `RESUME` is gone
+- the routed key path now waits on exact Apollo transition-gap and natural transfer state until the overall routed-step bound is exhausted
 
 ## Next candidate to remove
 
@@ -112,7 +114,7 @@ Reason:
 - Path: `NativeApolloCore::runInstructionRoutedApolloInput` late request trigger
   - Why it exists: the emulator still does not implement enough Apollo-owned Executive scheduler/job-switch aftermath to know purely from Apollo state when the pending request should be handed from the routed interrupt-return path into the job-dispatch path
   - Apollo-owned replacement target: exact Executive scheduler boundaries around `DUMMYJOB`, `ADVAN`, `NUDIRECT`, `CHANJOB`, and their core-set/job-switch aftermath
-  - Reduced this batch: yes; the trigger no longer dispatches at the first proven scheduler label, and now waits for exact natural `SUPDXCHZ` / `SUPDXCHZ +1` transfer state before falling back to the older bounded post-`RESUME` timer
+  - Reduced this batch: yes; the trigger no longer dispatches at the first proven scheduler label, now waits for exact natural `SUPDXCHZ` / `SUPDXCHZ +1` transfer state, and the separate late invocation timer is gone
 
 - Path: `NativeApolloCore::continueAfterExecutiveDispatch` post-`SUPDXCHZ` completion trigger
   - Why it exists: the emulator still does not implement enough Apollo-owned scheduler/job-switch aftermath to know purely from Apollo state when the dispatched job has fully taken ownership
@@ -128,6 +130,11 @@ Reason:
   - Why it exists: the routed key path still needs more Apollo-owned completion boundaries after scheduler/job-switch transfer
   - Apollo-owned replacement target: exact deeper labels after `SUPDXCHZ` and their runtime consequences
   - Reduced this batch: yes; exact `ENDPRCHG`, `NUCHANG2`, and `INTRSM` are now proven and mapped
+
+- Path: deeper exact transition-gap derivation between the scheduler slice and natural transfer state
+  - Why it exists: the routed key path still needed exact labels in the middle transition gap so the remaining invocation timer could be tied to Apollo state rather than to `RESUME` alone
+  - Apollo-owned replacement target: exact middle transition labels and eventual elimination of the remaining invocation timer
+  - Reduced this batch: yes; exact `JOBSLP1` and `JOBSLP2` are now proven and mapped, and the remaining separate invocation timer is gone
 
 - Path: local `yaYUL` listing tool build
   - Why it exists: the derived Windows build path now succeeds far enough to produce `third_party/_derived_tools/yaYUL.exe`, but the host still denies executing that derived helper from this workspace, so it still cannot emit a listing

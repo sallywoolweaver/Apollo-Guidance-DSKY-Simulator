@@ -20,7 +20,6 @@ constexpr uint16_t kNewLocAddress = 065;
 constexpr uint16_t kAruptAddress = 010;
 constexpr uint16_t kLruptAddress = 011;
 constexpr uint16_t kBruptAddress = 017;
-constexpr int kPostResumeDispatchBudget = 256;
 constexpr int kPostDispatchTargetBudget = 128;
 constexpr uint16_t kSupdxchzOffset = 03165 & 01777;
 constexpr uint16_t kSupdxchzPlusOneOffset = 03166 & 01777;
@@ -464,7 +463,6 @@ bool NativeApolloCore::runInstructionRoutedApolloInput(
     pendingExecutiveRequest_ = PendingExecutiveRequest{};
     activeDispatchTarget_ = ActiveDispatchTarget{};
     bool sawResume = false;
-    int postResumeInstructions = 0;
     primeApolloKeyruptLeadInState();
     if (!jumpToLabelWithSwitchedBank(entryLabel, 04)) {
         return false;
@@ -483,7 +481,6 @@ bool NativeApolloCore::runInstructionRoutedApolloInput(
 
         if (state.executionNote == "RESUME") {
             sawResume = true;
-            postResumeInstructions = 0;
         } else if (sawResume && pendingExecutiveRequest_.active) {
             const bool atSupdxchz = state.programCounterBank == 02 && state.programCounterOffset == kSupdxchzOffset;
             const bool atSupdxchzPlusOne =
@@ -493,10 +490,6 @@ bool NativeApolloCore::runInstructionRoutedApolloInput(
                     return false;
                 }
                 return continueAfterExecutiveDispatch(512);
-            }
-            postResumeInstructions += 1;
-            if (postResumeInstructions >= kPostResumeDispatchBudget) {
-                break;
             }
         }
 

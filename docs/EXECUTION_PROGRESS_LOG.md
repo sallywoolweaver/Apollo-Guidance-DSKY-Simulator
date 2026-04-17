@@ -683,6 +683,66 @@
   - local fallback command parsing and entry buffering still remain when Apollo display/input ownership is absent
   - phase ownership, telemetry, and mission outcomes remain compatibility-owned
 
+## 2026-04-17 - the remaining late invocation timer now starts only after exact transition-gap labels instead of immediately after `RESUME`
+
+- What changed:
+  - proved exact transition-gap labels in the middle path:
+    - `JOBSLP1` at `01:2776`
+    - `JOBSLP2` at `01:3007`
+  - added those exact labels to the derived runtime rope-label overlay
+  - reduced the remaining late invocation timer again:
+    - it no longer starts immediately after exact `RESUME`
+    - it now starts only after the routed path reaches exact transition-gap labels:
+      - `JOBSLP1`
+      - `JOBSLP2`
+      - `NUCHANG2`
+    - if Apollo reaches exact natural `SUPDXCHZ` / `SUPDXCHZ +1` transfer state first, the remaining timer never fires
+- Apollo artifact used:
+  - `third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc`
+  - `third_party/apollo/apollo11/lm/luminary099/AP11ROPE.binsource`
+  - `third_party/apollo/upstream/virtualagc/Tools/disassemblerAGC/disassemblerAGC.py`
+- What visible/runtime behavior became more emulator-driven:
+  - no new device-confirmed visible DSKY consequence is claimed from this pass alone
+  - more of the Apollo-owned transition-gap path can now execute before the remaining fallback timer is even eligible to fire
+  - `EXEC <label>` can now honestly surface:
+    - `JOBSLP1`
+    - `JOBSLP2`
+    - `NUCHANG2`
+- What still remains fallback/custom:
+  - the late invocation timer still exists if the exact transition-gap and natural transfer states are not reached in time
+  - the post-`SUPDXCHZ` completion budget still exists as fallback when `ENDPRCHG` / `INTRSM` are not reached
+  - deeper Apollo-owned scheduler/core-set/job-switch aftermath beyond these exact boundaries is still incomplete
+  - local fallback command parsing and entry buffering still remain when Apollo display/input ownership is absent
+  - phase ownership, telemetry, and mission outcomes remain compatibility-owned
+
+## 2026-04-17 - the separate late invocation timer is gone; the routed key path now waits on exact Apollo state until natural transfer or overall routed-step exhaustion
+
+- What changed:
+  - removed the separate late invocation timer from `runInstructionRoutedApolloInput(...)`
+  - preserved the exact transition-gap labels:
+    - `JOBSLP1`
+    - `JOBSLP2`
+    - `NUCHANG2`
+  - preserved exact natural transfer-state handling:
+    - `SUPDXCHZ`
+    - `SUPDXCHZ +1`
+  - after exact `RESUME`, the routed path now keeps stepping on exact Apollo-owned state until:
+    - exact natural transfer state is reached
+    - or the overall routed-step budget ends and the remaining fallback primitive is forced
+- Apollo artifact used:
+  - `third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc`
+  - `third_party/apollo/apollo11/lm/luminary099/AP11ROPE.binsource`
+- What visible/runtime behavior became more emulator-driven:
+  - no new device-confirmed visible DSKY consequence is claimed from this pass alone
+  - the last separate invocation timer debt is gone
+  - more of the exact transition-gap and natural-transfer path can now execute before any fallback is allowed
+- What still remains fallback/custom:
+  - the remaining invocation fallback primitive still exists if the routed path never reaches natural transfer state before the overall routed-step budget ends
+  - the post-`SUPDXCHZ` completion budget still exists as fallback when `ENDPRCHG` / `INTRSM` are not reached
+  - deeper Apollo-owned scheduler/core-set/job-switch aftermath beyond these exact boundaries is still incomplete
+  - local fallback command parsing and entry buffering still remain when Apollo display/input ownership is absent
+  - phase ownership, telemetry, and mission outcomes remain compatibility-owned
+
 ## Preserved earlier gains
 
 - native CPU rope-label execution tracking

@@ -43,6 +43,31 @@ TARGETS = {
             "TCF 6050",
         ],
     },
+    "JOBSLP1": {
+        "source_file": "EXECUTIVE.agc",
+        "dtest_file": "luminary099_bank01_full.dtest.txt",
+        "length": 9,
+        "exact_override": [
+            "INHINT",
+            "CS 0167",
+            "TS 0167",
+            "CA 6074",
+            "MASK BB",
+            "EXTEND",
+            "ROR SUPERBNK",
+            "TS 0165",
+            "CS 4755",
+        ],
+    },
+    "JOBSLP2": {
+        "source_file": "EXECUTIVE.agc",
+        "dtest_file": "luminary099_bank01_full.dtest.txt",
+        "length": 2,
+        "exact_override": [
+            "TS 0131",
+            "TCF 3120",
+        ],
+    },
     "NUCHANG2": {
         "source_file": "EXECUTIVE.agc",
         "dtest_file": "luminary099_bank01_full.dtest.txt",
@@ -243,7 +268,18 @@ def main() -> int:
         f"Source dir: {report['source_dir']}",
         "",
     ]
-    for label in ["CHANJOB", "DUMMYJOB", "ADVAN", "NUDIRECT", "ENDPRCHG", "NUCHANG2", "INTRSM", "SUPDXCHZ"]:
+    for label in [
+        "CHANJOB",
+        "ENDPRCHG",
+        "JOBSLP1",
+        "JOBSLP2",
+        "NUCHANG2",
+        "DUMMYJOB",
+        "ADVAN",
+        "NUDIRECT",
+        "INTRSM",
+        "SUPDXCHZ",
+    ]:
         item = report["targets"][label]
         lines.append(label)
         lines.append(f"  source: {item['source_file']}")

@@ -8,6 +8,34 @@ CHANJOB
   exact hits: 01,2706
   opcode-only hits: 01,2706
 
+ENDPRCHG
+  source: third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc
+  disassembly: third_party/_derived_tools/luminary099_bank01_full.dtest.txt
+  source exact sequence: RELINT | DXCH 0164 | EXTEND | BZMF 2772 | DXCH Z | CS A | AD 4753 | TS 0164 | TCF 6050
+  exact hits: 01,2765
+  opcode-only hits: 01,2765
+
+JOBSLP1
+  source: third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc
+  disassembly: third_party/_derived_tools/luminary099_bank01_full.dtest.txt
+  source exact sequence: INHINT | CS 0167 | TS 0167 | CA 6074 | MASK BB | EXTEND | ROR SUPERBNK | TS 0165 | CS 4755
+  exact hits: 01,2776
+  opcode-only hits: 01,2776
+
+JOBSLP2
+  source: third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc
+  disassembly: third_party/_derived_tools/luminary099_bank01_full.dtest.txt
+  source exact sequence: TS 0131 | TCF 3120
+  exact hits: 01,3007
+  opcode-only hits: 01,2347, 01,2370, 01,2672, 01,2774, 01,3007, 01,3042, 01,3167, 01,3761, 01,3766
+
+NUCHANG2
+  source: third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc
+  disassembly: third_party/_derived_tools/luminary099_bank01_full.dtest.txt
+  source exact sequence: INHINT | CCS 0067 | TCF 3016 | RELINT | TCF 3216 | CA 4752 | EXTEND | WOR 11 | DXCH 0164 | TCF 2712
+  exact hits: 01,3011
+  opcode-only hits: 01,3011
+
 DUMMYJOB
   source: third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc
   disassembly: third_party/_derived_tools/luminary099_bank01_full.dtest.txt
@@ -28,20 +56,6 @@ NUDIRECT
   source exact sequence: EXTEND | WOR 11 | DXCH 0164 | TCF 5165
   exact hits: 01,3225
   opcode-only hits: 01,3017, 01,3225
-
-ENDPRCHG
-  source: third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc
-  disassembly: third_party/_derived_tools/luminary099_bank01_full.dtest.txt
-  source exact sequence: RELINT | DXCH 0164 | EXTEND | BZMF 2772 | DXCH Z | CS A | AD 4753 | TS 0164 | TCF 6050
-  exact hits: 01,2765
-  opcode-only hits: 01,2765
-
-NUCHANG2
-  source: third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc
-  disassembly: third_party/_derived_tools/luminary099_bank01_full.dtest.txt
-  source exact sequence: INHINT | CCS 0067 | TCF 3016 | RELINT | TCF 3216 | CA 4752 | EXTEND | WOR 11 | DXCH 0164 | TCF 2712
-  exact hits: 01,3011
-  opcode-only hits: 01,3011
 
 INTRSM
   source: third_party/apollo/apollo11/lm/luminary099/INTERPRETER.agc

@@ -36,7 +36,7 @@
   - momentary release of channel-15 DSKY key input after the next native step
   - `PRO` as an Apollo-style channel-32 proceed input pulse
   - exact Luminary 099 direct entry into Apollo `PROCKEY` through the native core
-  - a partial exact Luminary 099 `KEYRUPT1` / `LODSAMPT` / `KEYCOM` / `ACCEPTUP` lead-in before exact `NOVAC` request capture, exact `NOVAC2` / `SETLOC` Executive aftermath, exact `WAITLIST` `RESUME` entry work, the exact Apollo `RESUME` special instruction, and a later remaining fallback dispatch built from Apollo-captured `NEWLOC` `2CADR` state that now enters exact Apollo `SUPDXCHZ`; that remaining handoff is now anchored first to exact Apollo `RESUME`, then allowed to continue through the proven scheduler/job-switch slice `CHANJOB` / `ADVAN` / `NUDIRECT`, and only injects the captured request when Apollo reaches exact natural `SUPDXCHZ` / `SUPDXCHZ +1` transfer state; only if those transfer states are not reached in time does the older bounded post-`RESUME` emulator timer still fire; post-`SUPDXCHZ` continuation still waits for the Apollo-requested target to become active, and can now terminate on exact deeper aftermath labels `ENDPRCHG` / `INTRSM`, before the remaining bounded emulator window can end the routed flow
+  - a partial exact Luminary 099 `KEYRUPT1` / `LODSAMPT` / `KEYCOM` / `ACCEPTUP` lead-in before exact `NOVAC` request capture, exact `NOVAC2` / `SETLOC` Executive aftermath, exact `WAITLIST` `RESUME` entry work, the exact Apollo `RESUME` special instruction, and a later remaining fallback dispatch built from Apollo-captured `NEWLOC` `2CADR` state that now enters exact Apollo `SUPDXCHZ`; that remaining handoff is now anchored first to exact Apollo `RESUME`, then allowed to continue through the proven scheduler/job-switch slice `CHANJOB` / `ADVAN` / `NUDIRECT`, then through exact transition-gap labels `JOBSLP1` / `JOBSLP2` / `NUCHANG2`, and only injects the captured request when Apollo reaches exact natural `SUPDXCHZ` / `SUPDXCHZ +1` transfer state; the old separate invocation timer is now gone, so fallback only occurs if the overall routed-step budget ends before natural transfer state is reached; post-`SUPDXCHZ` continuation still waits for the Apollo-requested target to become active, and can now terminate on exact deeper aftermath labels `ENDPRCHG` / `INTRSM`, before the remaining bounded emulator window can end the routed flow
   - corrected Apollo double-word CPU semantics for `DCA`, `DAS`, and `DXCH`
   - more honest interrupt lead-in seeding for the routed key path via `ARUPT`, `LRUPT`, `BRUPT`, and interrupted `BBANK`
   - Apollo-corrected channel-10 relay-row decoding for visible DSKY register digits and signs
@@ -54,6 +54,8 @@
 - exact Executive scheduler/job-switch labels now proven by the current bank-split disassembly path:
   - `CHANJOB`
   - `ENDPRCHG`
+  - `JOBSLP1`
+  - `JOBSLP2`
   - `NUCHANG2`
   - `DUMMYJOB`
   - `ADVAN`
@@ -65,6 +67,8 @@
 - the newer local alignment check now proves:
   - `CHANJOB` at `01:2706`
   - `ENDPRCHG` at `01:2765`
+  - `JOBSLP1` at `01:2776`
+  - `JOBSLP2` at `01:3007`
   - `NUCHANG2` at `01:3011`
   - `DUMMYJOB` at `01:3206`
   - `ADVAN` at `01:3214`

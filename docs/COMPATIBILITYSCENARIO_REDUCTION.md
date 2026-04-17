@@ -92,6 +92,10 @@
   - `ENDPRCHG`
   - `INTRSM`
   before the older post-target instruction budget is allowed to fire
+- the remaining late dispatch trigger now waits for exact natural Apollo transfer state:
+  - `SUPDXCHZ`
+  - `SUPDXCHZ +1`
+  instead of dispatching at the first proven scheduler-label boundary
 
 ## Next candidate to remove
 
@@ -108,7 +112,7 @@ Reason:
 - Path: `NativeApolloCore::runInstructionRoutedApolloInput` late request trigger
   - Why it exists: the emulator still does not implement enough Apollo-owned Executive scheduler/job-switch aftermath to know purely from Apollo state when the pending request should be handed from the routed interrupt-return path into the job-dispatch path
   - Apollo-owned replacement target: exact Executive scheduler boundaries around `DUMMYJOB`, `ADVAN`, `NUDIRECT`, `CHANJOB`, and their core-set/job-switch aftermath
-  - Reduced this batch: yes; the trigger now prefers exact proven scheduler labels before falling back to the older bounded post-`RESUME` timer
+  - Reduced this batch: yes; the trigger no longer dispatches at the first proven scheduler label, and now waits for exact natural `SUPDXCHZ` / `SUPDXCHZ +1` transfer state before falling back to the older bounded post-`RESUME` timer
 
 - Path: `NativeApolloCore::continueAfterExecutiveDispatch` post-`SUPDXCHZ` completion trigger
   - Why it exists: the emulator still does not implement enough Apollo-owned scheduler/job-switch aftermath to know purely from Apollo state when the dispatched job has fully taken ownership

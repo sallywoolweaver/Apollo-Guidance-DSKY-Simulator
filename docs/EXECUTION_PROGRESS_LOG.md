@@ -652,6 +652,37 @@
   - local fallback command parsing and entry buffering still remain when Apollo display/input ownership is absent
   - phase ownership, telemetry, and mission outcomes remain compatibility-owned
 
+## 2026-04-17 - the late invocation handoff now waits for exact natural `SUPDXCHZ` transfer state instead of dispatching at the first scheduler label
+
+- What changed:
+  - preserved the exact proven scheduler/job-switch slice:
+    - `CHANJOB`
+    - `ADVAN`
+    - `NUDIRECT`
+  - preserved the exact proven completion slice:
+    - `ENDPRCHG`
+    - `INTRSM`
+  - removed the earlier behavior where the routed key path injected the pending request as soon as it reached one of the scheduler labels
+  - the routed path now continues stepping through more of the exact Apollo middle transition logic until it reaches exact natural transfer state:
+    - `SUPDXCHZ`
+    - `SUPDXCHZ +1`
+  - only at that exact transfer state does the runtime arm the captured `NEWLOC` / `NEWLOC+1` request into `A+L`
+  - only if those exact transfer states are not reached in time does the old bounded post-`RESUME` timer still fire
+- Apollo artifact used:
+  - `third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc`
+  - `third_party/apollo/apollo11/lm/luminary099/INTERPRETER.agc`
+  - `third_party/apollo/apollo11/lm/luminary099/AP11ROPE.binsource`
+- What visible/runtime behavior became more emulator-driven:
+  - no new device-confirmed visible DSKY consequence is claimed from this pass alone
+  - the late invocation path is now less timer-driven and less scheduler-label-triggered, because it waits for Apollo to reach exact `SUPDXCHZ` / `SUPDXCHZ +1` transfer state before the remaining handoff occurs
+  - more of the exact middle scheduler/core-set transition path can now execute before the remaining fallback injection happens
+- What still remains fallback/custom:
+  - the late invocation fallback timer still exists if the exact natural transfer states are not reached in time
+  - the post-`SUPDXCHZ` completion budget still exists as fallback when `ENDPRCHG` / `INTRSM` are not reached
+  - deeper Apollo-owned scheduler/core-set/job-switch aftermath beyond these exact boundaries is still incomplete
+  - local fallback command parsing and entry buffering still remain when Apollo display/input ownership is absent
+  - phase ownership, telemetry, and mission outcomes remain compatibility-owned
+
 ## Preserved earlier gains
 
 - native CPU rope-label execution tracking

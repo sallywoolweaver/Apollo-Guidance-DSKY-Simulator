@@ -53,6 +53,7 @@ class NativeApolloCore {
     bool jumpToLabelWithSwitchedBank(const std::string& label, uint16_t switchedBank);
     bool dispatchCapturedNovacRequest();
     bool dispatchPendingExecutiveRequest();
+    bool armPendingExecutiveRequestAtCurrentTransferState(bool atSupdxchzPlusOne);
     bool continueAfterExecutiveDispatch(int maxInstructions);
     static int normalizeFixedAddressForBank(int bank, uint16_t address12);
     static uint16_t fixedAddressForBankOffset(int bank, int offset);

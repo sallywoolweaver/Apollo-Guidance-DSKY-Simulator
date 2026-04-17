@@ -95,11 +95,11 @@ Those files are derived debugging artifacts, not Apollo artifacts.
     - return through exact `WAITLIST` `RESUME` / `NOQRSM` / `NOQBRSM`
     - now execute the exact Apollo `RESUME` special instruction itself
     - the remaining late handoff now waits for exact Apollo `RESUME`
-    - after `RESUME`, it now prefers exact scheduler/job-switch labels:
-      - `CHANJOB`
-      - `ADVAN`
-      - `NUDIRECT`
-    - only if those proven scheduler boundaries are not reached in time does it fall back to the bounded post-`RESUME` timer
+    - after `RESUME`, it now lets Apollo continue through the proven scheduler/job-switch slice instead of dispatching at the first scheduler label boundary
+    - the remaining late dispatch now waits for exact natural Apollo transfer state:
+      - `SUPDXCHZ` entry
+      - `SUPDXCHZ +1` entry
+    - only if those exact transfer states are not reached in time does it fall back to the bounded post-`RESUME` timer
     - if the requested job still has not become self-dispatching after the extended post-`RESUME` Apollo execution window, the remaining fallback now loads the Apollo-captured `NEWLOC` / `NEWLOC+1` `2CADR` request state into `A+L` and enters exact `SUPDXCHZ` instead of jumping directly to a decoded target label
     - after `SUPDXCHZ`, post-dispatch completion can now stop on exact Executive/Interpreter aftermath labels:
       - `ENDPRCHG`
@@ -138,7 +138,7 @@ Those files are derived debugging artifacts, not Apollo artifacts.
   - `ENDPRCHG` at `01:2765`
   - `NUCHANG2` at `01:3011`
   - `INTRSM` at `03:2050`
-- The current remaining trigger is smaller than before, but it is still not full Apollo job scheduling and interrupt return.
+- The current remaining invocation trigger is smaller than before because it now waits for exact natural `SUPDXCHZ` / `SUPDXCHZ +1` transfer state instead of dispatching at the earlier scheduler labels, but it is still not full Apollo job scheduling and interrupt return.
 - A stronger local alignment check now exists in:
   - `third_party/_derived_tools/luminary099_executive_alignment_check.txt`
   - it confirms exact:

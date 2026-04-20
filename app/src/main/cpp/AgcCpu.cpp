@@ -26,6 +26,18 @@ constexpr uint16_t kResumeInstructionWord = 050017;
 uint16_t maskWord(uint32_t value) {
     return static_cast<uint16_t>(value & kWordMask);
 }
+
+uint16_t addOnesComplement(uint16_t lhs, uint16_t rhs) {
+    uint32_t sum = static_cast<uint32_t>(lhs & kWordMask) + static_cast<uint32_t>(rhs & kWordMask);
+    while (sum > kWordMask) {
+        sum = (sum & kWordMask) + 1U;
+    }
+    return static_cast<uint16_t>(sum & kWordMask);
+}
+
+uint16_t negateOnesComplement(uint16_t value) {
+    return static_cast<uint16_t>(~value) & kWordMask;
+}
 }
 
 void AgcCpu::initialize() {
@@ -535,7 +547,7 @@ void AgcCpu::executeFetchedWord(uint16_t word, AgcMemoryImage& memoryImage) {
         }
         case 026:
         case 027: {
-            const uint16_t result = maskWord(static_cast<uint32_t>(state_.accumulator) + readOperand10(address10, memoryImage));
+            const uint16_t result = addOnesComplement(state_.accumulator, readOperand10(address10, memoryImage));
             state_.accumulator = result;
             if (address10 != kRegA) {
                 writeOperand10(address10, result, memoryImage);
@@ -620,7 +632,7 @@ void AgcCpu::executeFetchedWord(uint16_t word, AgcMemoryImage& memoryImage) {
         case 065:
         case 066:
         case 067:
-            state_.accumulator = maskWord(static_cast<uint32_t>(state_.accumulator) + readOperand12(address12, memoryImage));
+            state_.accumulator = addOnesComplement(state_.accumulator, readOperand12(address12, memoryImage));
             state_.supportedOpcodeSkeletonCount++;
             state_.executionNote = "AD " + std::to_string(address12);
             break;
@@ -733,7 +745,10 @@ void AgcCpu::executeFetchedWord(uint16_t word, AgcMemoryImage& memoryImage) {
             break;
         case 0160:
         case 0161:
-            state_.accumulator = maskWord(static_cast<uint32_t>(state_.accumulator) + static_cast<uint32_t>(maskWord(~readOperand10(address10, memoryImage))));
+            state_.accumulator = addOnesComplement(
+                state_.accumulator,
+                negateOnesComplement(readOperand10(address10, memoryImage))
+            );
             state_.supportedOpcodeSkeletonCount++;
             state_.executionNote = "SU " + std::to_string(address10);
             break;

@@ -98,6 +98,17 @@
   instead of dispatching at the first proven scheduler-label boundary
 - the old separate late invocation timer after `RESUME` is gone
 - the routed key path now waits on exact Apollo transition-gap and natural transfer state until the overall routed-step bound is exhausted
+- if the overall routed-step bound is exhausted after Apollo has already entered the exact final pre-transfer transition slice:
+  - `JOBSLP1`
+  - `JOBSLP2`
+  - `NUCHANG2`
+  - `DUMMYJOB`
+  - `ADVAN`
+  - `SELFBANK`
+  - `NUDIRECT`
+  the runtime now gives that exact Apollo slice one more continuation window to reach natural `SUPDXCHZ` / `SUPDXCHZ +1` transfer state before the remaining forced handoff is allowed
+- post-`SUPDXCHZ` completion can now also stop on exact `TASKOVER` before the fallback post-target budget is allowed to fire
+- the custom erasable initializer now includes the exact Apollo fresh-start `SELFRET` word used by the `ADVAN -> SELFBANK -> SUPDXCHZ +1` idle/self-check dispatch path
 
 ## Next candidate to remove
 
@@ -114,12 +125,17 @@ Reason:
 - Path: `NativeApolloCore::runInstructionRoutedApolloInput` late request trigger
   - Why it exists: the emulator still does not implement enough Apollo-owned Executive scheduler/job-switch aftermath to know purely from Apollo state when the pending request should be handed from the routed interrupt-return path into the job-dispatch path
   - Apollo-owned replacement target: exact Executive scheduler boundaries around `DUMMYJOB`, `ADVAN`, `NUDIRECT`, `CHANJOB`, and their core-set/job-switch aftermath
-  - Reduced this batch: yes; the trigger no longer dispatches at the first proven scheduler label, now waits for exact natural `SUPDXCHZ` / `SUPDXCHZ +1` transfer state, and the separate late invocation timer is gone
+  - Reduced this batch: not yet; this pass corrected native one’s-complement `AD` / `ADS` / `SU` arithmetic used on the routed Executive path, but the remaining forced handoff still exists until Apollo-owned scheduler/job-switch state can make the pending request self-dispatch without emulator intervention
 
 - Path: `NativeApolloCore::continueAfterExecutiveDispatch` post-`SUPDXCHZ` completion trigger
   - Why it exists: the emulator still does not implement enough Apollo-owned scheduler/job-switch aftermath to know purely from Apollo state when the dispatched job has fully taken ownership
   - Apollo-owned replacement target: deeper exact Executive scheduler/job-switch aftermath after `SUPDXCHZ`, especially around `DUMMYJOB`, `ADVAN`, `NUDIRECT`, and `CHANJOB`
-  - Reduced this batch: yes; exact `ENDPRCHG` and `INTRSM` now terminate the routed post-dispatch window before the fallback post-target budget is allowed to fire
+  - Reduced this batch: yes; exact `ENDPRCHG`, `TASKOVER`, and `INTRSM` now terminate the routed post-dispatch window before the fallback post-target budget is allowed to fire
+
+- Path: native Executive arithmetic on the routed scheduler path
+  - Why it exists: the routed path still depended on plain masked binary addition where Apollo Executive state uses one’s-complement arithmetic with end-around carry
+  - Apollo-owned replacement target: Apollo-correct arithmetic for the Executive priority/new-job state transitions inside `SETLOC`, `SPECTEST`, `ENDPRCHG`, and adjacent scheduler code
+  - Reduced this batch: yes; `AD`, `ADS`, and `SU` now use one’s-complement end-around-carry arithmetic in the native CPU
 
 - Path: exact scheduler-label derivation around `DUMMYJOB` / `ADVAN` / `NUDIRECT` / `CHANJOB`
   - Why it exists: broader Executive work still needs more exact labels than the currently proven set, and the local `.lst` path is still blocked
@@ -129,7 +145,7 @@ Reason:
 - Path: deeper exact Executive aftermath derivation beyond the current scheduler slice
   - Why it exists: the routed key path still needs more Apollo-owned completion boundaries after scheduler/job-switch transfer
   - Apollo-owned replacement target: exact deeper labels after `SUPDXCHZ` and their runtime consequences
-  - Reduced this batch: yes; exact `ENDPRCHG`, `NUCHANG2`, and `INTRSM` are now proven and mapped
+  - Reduced this batch: yes; exact `ENDPRCHG`, `NUCHANG2`, `TASKOVER`, and `INTRSM` are now proven and mapped
 
 - Path: deeper exact transition-gap derivation between the scheduler slice and natural transfer state
   - Why it exists: the routed key path still needed exact labels in the middle transition gap so the remaining invocation timer could be tied to Apollo state rather than to `RESUME` alone

@@ -181,6 +181,25 @@
         "03,2050"
       ]
     },
+    "TASKOVER": {
+      "source_file": "third_party/apollo/apollo11/lm/luminary099/WAITLIST.agc",
+      "dtest_file": "third_party/_derived_tools/luminary099_bank02_full.dtest.txt",
+      "source_exact_sequence": [
+        "CCS 0734",
+        "CA 5220",
+        "TS BB",
+        "TCF 3414",
+        "CA BBRUPT",
+        "EXTEND",
+        "WRITE SUPERBNK"
+      ],
+      "exact_hits": [
+        "02,3261"
+      ],
+      "opcode_only_hits": [
+        "02,3261"
+      ]
+    },
     "SUPDXCHZ": {
       "source_file": "third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc",
       "dtest_file": "third_party/_derived_tools/luminary099_bank02_full.dtest.txt",

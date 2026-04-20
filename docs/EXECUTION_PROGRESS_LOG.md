@@ -743,6 +743,135 @@
   - local fallback command parsing and entry buffering still remain when Apollo display/input ownership is absent
   - phase ownership, telemetry, and mission outcomes remain compatibility-owned
 
+## 2026-04-17 - the final pre-transfer fallback primitive is narrower, and post-`SUPDXCHZ` completion can now stop on exact `TASKOVER`
+
+- What changed:
+  - proved exact `TASKOVER` at `02:3261` from:
+    - `third_party/apollo/apollo11/lm/luminary099/WAITLIST.agc`
+    - `third_party/apollo/apollo11/lm/luminary099/AP11ROPE.binsource`
+    - `third_party/apollo/upstream/virtualagc/Tools/disassemblerAGC/disassemblerAGC.py`
+  - added `TASKOVER` to the derived runtime rope-label overlay and the exact routine map
+  - reduced the final routed-step exhaustion fallback primitive:
+    - if routed-step exhaustion happens after Apollo has already entered the exact final pre-transfer transition slice:
+      - `JOBSLP1`
+      - `JOBSLP2`
+      - `NUCHANG2`
+      - `DUMMYJOB`
+      - `ADVAN`
+      - `NUDIRECT`
+      the runtime now gives that exact Apollo slice one more continuation window to reach natural `SUPDXCHZ` / `SUPDXCHZ +1` transfer state before any forced handoff is allowed
+  - reduced the post-`SUPDXCHZ` completion fallback budget:
+    - `continueAfterExecutiveDispatch(...)` now also returns on exact `TASKOVER`
+    - only if exact `ENDPRCHG`, `TASKOVER`, or `INTRSM` are not reached does the fallback post-target budget still end the routed flow
+- Apollo artifact used:
+  - `third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc`
+  - `third_party/apollo/apollo11/lm/luminary099/WAITLIST.agc`
+  - `third_party/apollo/apollo11/lm/luminary099/AP11ROPE.binsource`
+  - `third_party/apollo/upstream/virtualagc/Tools/disassemblerAGC/disassemblerAGC.py`
+- What visible/runtime behavior became more emulator-driven:
+  - no new device-confirmed visible DSKY consequence is claimed from this pass alone
+  - the remaining routed-step exhaustion fallback is narrower because exact Apollo state in the final transition slice gets one more chance to reach natural transfer before any forced handoff is allowed
+  - post-`SUPDXCHZ` completion is less budget-driven because exact `TASKOVER` is now another real Apollo-owned completion boundary
+  - `EXEC <label>` can now honestly surface:
+    - `TASKOVER`
+- What still remains fallback/custom:
+  - the final forced handoff still exists if Apollo still never reaches natural `SUPDXCHZ` / `SUPDXCHZ +1` transfer state before the overall routed-step exhaustion plus the exact final-slice continuation window ends
+  - the post-`SUPDXCHZ` completion budget still exists when exact `ENDPRCHG`, `TASKOVER`, or `INTRSM` are not reached
+  - deeper Apollo-owned scheduler/core-set/job-switch aftermath beyond these exact boundaries is still incomplete
+  - local fallback command parsing and entry buffering still remain when Apollo display/input ownership is absent
+  - phase ownership, telemetry, and mission outcomes remain compatibility-owned
+
+## 2026-04-20 - exact `SELFRET` fresh-start state is now seeded, and the final pre-transfer slice can surface exact `SELFBANK`
+
+- What changed:
+  - extended the Apollo-derived custom erasable initializer with one more exact fresh-start Executive word:
+    - `SELFRET` at erasable `1361`
+    - seeded to exact Apollo fresh-start value `06102`
+    - derived from untouched `FRESH_START_AND_RESTART.agc`:
+      - `CAF LESCHK`
+      - `TS SELFRET`
+      - `LESCHK GENADR SELFCHK`
+  - added exact `SELFBANK` at `01:3224` to the derived rope-label overlay and exact routine map
+  - preserved all current proven routed boundaries:
+    - `JOBSLP1`
+    - `JOBSLP2`
+    - `NUCHANG2`
+    - `DUMMYJOB`
+    - `ADVAN`
+    - `NUDIRECT`
+    - natural `SUPDXCHZ` / `SUPDXCHZ +1`
+    - completion-side `ENDPRCHG` / `TASKOVER` / `INTRSM`
+- Apollo artifact used:
+  - `third_party/apollo/apollo11/lm/luminary099/FRESH_START_AND_RESTART.agc`
+  - `third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc`
+  - `third_party/apollo/apollo11/lm/luminary099/ERASABLE_ASSIGNMENTS.agc`
+  - `third_party/apollo/apollo11/lm/luminary099/AP11ROPE.binsource`
+- Which exact Apollo labels in the final remaining pre-transfer segment are now exercised:
+  - the previously proven slice remains:
+    - `JOBSLP1`
+    - `JOBSLP2`
+    - `NUCHANG2`
+    - `DUMMYJOB`
+    - `ADVAN`
+    - `NUDIRECT`
+  - exact runtime visibility now also extends one label deeper to:
+    - `SELFBANK`
+- What fallback primitive or completion budget was reduced or removed:
+  - none removed in this pass
+  - this pass closes an Apollo-owned state gap inside the final pre-transfer slice rather than claiming a reduction that has not been runtime-proven yet
+- What visible/runtime consequence is now more Apollo-driven:
+  - the exact `ADVAN -> SELFBANK -> SUPDXCHZ +1` idle/self-check dispatch path now has its Apollo fresh-start return word present instead of relying on an unseeded zero-valued custom gap at `SELFRET`
+  - the runtime/debug path can now honestly surface `SELFBANK` if Apollo reaches that deeper final-slice label
+- What still remains fallback/custom:
+  - the final forced handoff still exists if Apollo still never reaches natural `SUPDXCHZ` / `SUPDXCHZ +1` transfer state before routed-step exhaustion
+  - the post-`SUPDXCHZ` completion budget still exists when exact `ENDPRCHG`, `TASKOVER`, or `INTRSM` are not reached
+  - the pending routed request is still not made self-dispatching purely from Apollo-owned scheduler/job-switch state
+  - local fallback command parsing and entry buffering still remain when Apollo display/input ownership is absent
+  - phase ownership, telemetry, and mission outcomes remain compatibility-owned
+
+## 2026-04-20 - Executive one’s-complement arithmetic is now closer to Apollo on the routed scheduler path, but the last forced handoff still remains
+
+- What changed:
+  - corrected the native CPU’s single-precision one’s-complement arithmetic for the Executive path:
+    - `AD`
+    - `ADS`
+    - `SU`
+  - these opcodes now use end-around-carry addition instead of plain masked binary addition
+  - preserved all current proven routed boundaries:
+    - `JOBSLP1`
+    - `JOBSLP2`
+    - `NUCHANG2`
+    - natural `SUPDXCHZ` / `SUPDXCHZ +1`
+    - completion-side `ENDPRCHG` / `TASKOVER` / `INTRSM`
+- Apollo artifact used:
+  - `third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc`
+  - `third_party/apollo/apollo11/lm/luminary099/WAITLIST.agc`
+  - `third_party/apollo/upstream/virtualagc/yaAGC/agc_engine.c`
+- Which exact Apollo labels in the final remaining transition segment are now exercised:
+  - no newly runtime-proven final-segment labels were added in this pass
+  - the currently proven exercised slice remains:
+    - `JOBSLP1`
+    - `JOBSLP2`
+    - `NUCHANG2`
+    - `DUMMYJOB`
+    - `ADVAN`
+    - `NUDIRECT`
+- What final fallback primitive or completion budget was reduced or removed:
+  - none removed in this pass
+  - this pass removes a real arithmetic mismatch on the Apollo-owned scheduler path, but the remaining forced handoff at routed-step exhaustion has not yet been honestly eliminated
+- What runtime consequence is now more Apollo-driven:
+  - Executive priority/new-job arithmetic on the routed path is now closer to real Apollo behavior in source-proven instructions such as:
+    - `SETLOC`
+    - `SPECTEST`
+    - `ENDPRCHG`
+  - this reduces emulator-owned distortion in the scheduler/job-switch state that decides whether Apollo should make its own way into the natural `SUPDXCHZ` transfer corridor
+- What still remains fallback/custom:
+  - the final forced handoff still exists if Apollo still does not reach natural `SUPDXCHZ` / `SUPDXCHZ +1` transfer state before routed-step exhaustion
+  - the post-`SUPDXCHZ` completion budget still exists when exact `ENDPRCHG`, `TASKOVER`, or `INTRSM` are not reached
+  - the pending routed request is still not made self-dispatching purely from Apollo-owned scheduler/job-switch state
+  - local fallback command parsing and entry buffering still remain when Apollo display/input ownership is absent
+  - phase ownership, telemetry, and mission outcomes remain compatibility-owned
+
 ## Preserved earlier gains
 
 - native CPU rope-label execution tracking

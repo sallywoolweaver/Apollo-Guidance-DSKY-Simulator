@@ -64,6 +64,13 @@ INTRSM
   exact hits: 03,2050
   opcode-only hits: 03,2034, 03,2050
 
+TASKOVER
+  source: third_party/apollo/apollo11/lm/luminary099/WAITLIST.agc
+  disassembly: third_party/_derived_tools/luminary099_bank02_full.dtest.txt
+  source exact sequence: CCS 0734 | CA 5220 | TS BB | TCF 3414 | CA BBRUPT | EXTEND | WRITE SUPERBNK
+  exact hits: 02,3261
+  opcode-only hits: 02,3261
+
 SUPDXCHZ
   source: third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc
   disassembly: third_party/_derived_tools/luminary099_bank02_full.dtest.txt

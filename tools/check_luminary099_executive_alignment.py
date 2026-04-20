@@ -90,6 +90,20 @@ TARGETS = {
         "dtest_file": "luminary099_bank03_interp_window.dtest.txt",
         "length": 2,
     },
+    "TASKOVER": {
+        "source_file": "WAITLIST.agc",
+        "dtest_file": "luminary099_bank02_full.dtest.txt",
+        "length": 7,
+        "exact_override": [
+            "CCS 0734",
+            "CA 5220",
+            "TS BB",
+            "TCF 3414",
+            "CA BBRUPT",
+            "EXTEND",
+            "WRITE SUPERBNK",
+        ],
+    },
     "SUPDXCHZ": {
         "source_file": "EXECUTIVE.agc",
         "dtest_file": "luminary099_bank02_full.dtest.txt",
@@ -112,6 +126,7 @@ OPERAND_ALIASES = {
     "SUPDXCHZ +1": "5166",
     "BBANK": "BB",
     "INTPRET +3": "6042",
+    "TASKOVER": "3261",
     "ONE": "4753",
 }
 
@@ -278,6 +293,7 @@ def main() -> int:
         "ADVAN",
         "NUDIRECT",
         "INTRSM",
+        "TASKOVER",
         "SUPDXCHZ",
     ]:
         item = report["targets"][label]

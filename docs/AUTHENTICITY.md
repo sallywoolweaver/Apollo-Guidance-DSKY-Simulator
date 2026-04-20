@@ -36,7 +36,15 @@
   - momentary release of channel-15 DSKY key input after the next native step
   - `PRO` as an Apollo-style channel-32 proceed input pulse
   - exact Luminary 099 direct entry into Apollo `PROCKEY` through the native core
-  - a partial exact Luminary 099 `KEYRUPT1` / `LODSAMPT` / `KEYCOM` / `ACCEPTUP` lead-in before exact `NOVAC` request capture, exact `NOVAC2` / `SETLOC` Executive aftermath, exact `WAITLIST` `RESUME` entry work, the exact Apollo `RESUME` special instruction, and a later remaining fallback dispatch built from Apollo-captured `NEWLOC` `2CADR` state that now enters exact Apollo `SUPDXCHZ`; that remaining handoff is now anchored first to exact Apollo `RESUME`, then allowed to continue through the proven scheduler/job-switch slice `CHANJOB` / `ADVAN` / `NUDIRECT`, then through exact transition-gap labels `JOBSLP1` / `JOBSLP2` / `NUCHANG2`, and only injects the captured request when Apollo reaches exact natural `SUPDXCHZ` / `SUPDXCHZ +1` transfer state; the old separate invocation timer is now gone, so fallback only occurs if the overall routed-step budget ends before natural transfer state is reached; post-`SUPDXCHZ` continuation still waits for the Apollo-requested target to become active, and can now terminate on exact deeper aftermath labels `ENDPRCHG` / `INTRSM`, before the remaining bounded emulator window can end the routed flow
+  - a partial exact Luminary 099 `KEYRUPT1` / `LODSAMPT` / `KEYCOM` / `ACCEPTUP` lead-in before exact `NOVAC` request capture, exact `NOVAC2` / `SETLOC` Executive aftermath, exact `WAITLIST` `RESUME` entry work, the exact Apollo `RESUME` special instruction, and a later remaining fallback dispatch built from Apollo-captured `NEWLOC` `2CADR` state that now enters exact Apollo `SUPDXCHZ`; that remaining handoff is now anchored first to exact Apollo `RESUME`, then allowed to continue through the proven scheduler/job-switch slice `CHANJOB` / `ADVAN` / `NUDIRECT`, then through exact transition-gap labels `JOBSLP1` / `JOBSLP2` / `NUCHANG2`, with exact runtime visibility now also extended to `SELFBANK`, and only injects the captured request when Apollo reaches exact natural `SUPDXCHZ` / `SUPDXCHZ +1` transfer state; the old separate invocation timer is now gone, and if routed-step exhaustion happens after Apollo has already entered that exact final transition slice the runtime now gives that slice one more continuation window to reach natural transfer before any forced handoff is allowed; post-`SUPDXCHZ` continuation still waits for the Apollo-requested target to become active, and can now terminate on exact deeper aftermath labels `ENDPRCHG` / `TASKOVER` / `INTRSM`, before the remaining bounded emulator window can end the routed flow
+  - the custom Luminary 099 erasable initializer now includes one more exact Apollo fresh-start Executive word:
+    - `SELFRET` seeded from `FRESH_START_AND_RESTART.agc` via `CAF LESCHK` / `TS SELFRET`
+    - this supports the exact `ADVAN -> SELFBANK -> SUPDXCHZ +1` idle/self-check dispatch path without inventing a local substitute word
+  - the native CPU now uses one’s-complement end-around-carry arithmetic for:
+    - `AD`
+    - `ADS`
+    - `SU`
+    on the routed Executive/scheduler path, replacing a plain masked binary approximation in that state transition logic
   - corrected Apollo double-word CPU semantics for `DCA`, `DAS`, and `DXCH`
   - more honest interrupt lead-in seeding for the routed key path via `ARUPT`, `LRUPT`, `BRUPT`, and interrupted `BBANK`
   - Apollo-corrected channel-10 relay-row decoding for visible DSKY register digits and signs
@@ -74,6 +82,7 @@
   - `ADVAN` at `01:3214`
   - `NUDIRECT` at `01:3225`
   - `SUPDXCHZ` at `02:3165`
+  - `TASKOVER` at `02:3261`
   - `INTRSM` at `03:2050`
   - the active Luminary 099 erasable image is still a custom initializer; it now seeds only the exact Executive fresh-start words needed for the narrow routed key path
   - local keyboard command parsing and entry buffering still exist only as fallback when Apollo DSKY entry routing is absent

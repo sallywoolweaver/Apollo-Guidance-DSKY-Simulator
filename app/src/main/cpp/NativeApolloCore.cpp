@@ -29,7 +29,18 @@ bool isSchedulerDispatchBoundaryLabel(const std::string& label) {
 }
 
 bool isExecutiveCompletionBoundaryLabel(const std::string& label) {
-    return label == "ENDPRCHG" || label == "INTRSM";
+    return label == "ENDPRCHG" || label == "INTRSM" || label == "TASKOVER";
+}
+
+bool isFinalPreTransferTransitionLabel(const std::string& label) {
+    return label == "JOBSLP1" || label == "JOBSLP2" || label == "NUCHANG2" ||
+        label == "DUMMYJOB" || label == "ADVAN" || label == "NUDIRECT";
+}
+
+bool isNaturalSupdxchzTransferState(const AgcCpu& cpu) {
+    const auto& state = cpu.state();
+    return state.programCounterBank == 02 &&
+        (state.programCounterOffset == kSupdxchzOffset || state.programCounterOffset == kSupdxchzPlusOneOffset);
 }
 
 struct ProgramPackageSections {
@@ -456,6 +467,33 @@ bool NativeApolloCore::continueAfterExecutiveDispatch(int maxInstructions) {
     return true;
 }
 
+bool NativeApolloCore::continueFinalTransitionToNaturalTransfer(int maxInstructions) {
+    for (int instruction = 0; instruction < maxInstructions; ++instruction) {
+        cpu_->stepInstruction(*memoryImage_);
+        const auto& state = cpu_->state();
+        if (state.programCounterBank == 02 && state.programCounterOffset == 01101) {
+            if (!dispatchCapturedNovacRequest()) {
+                return false;
+            }
+            continue;
+        }
+        if (state.currentLabel == "CHARIN2") {
+            return true;
+        }
+        if (!pendingExecutiveRequest_.active) {
+            return true;
+        }
+        if (isNaturalSupdxchzTransferState(*cpu_)) {
+            const bool atSupdxchzPlusOne = state.programCounterOffset == kSupdxchzPlusOneOffset;
+            if (!armPendingExecutiveRequestAtCurrentTransferState(atSupdxchzPlusOne)) {
+                return false;
+            }
+            return continueAfterExecutiveDispatch(512);
+        }
+    }
+    return false;
+}
+
 bool NativeApolloCore::runInstructionRoutedApolloInput(
     const std::string& entryLabel,
     int maxInstructions
@@ -463,6 +501,7 @@ bool NativeApolloCore::runInstructionRoutedApolloInput(
     pendingExecutiveRequest_ = PendingExecutiveRequest{};
     activeDispatchTarget_ = ActiveDispatchTarget{};
     bool sawResume = false;
+    bool sawFinalPreTransferTransition = false;
     primeApolloKeyruptLeadInState();
     if (!jumpToLabelWithSwitchedBank(entryLabel, 04)) {
         return false;
@@ -472,6 +511,9 @@ bool NativeApolloCore::runInstructionRoutedApolloInput(
         cpu_->stepInstruction(*memoryImage_);
 
         const auto& state = cpu_->state();
+        if (isFinalPreTransferTransitionLabel(state.currentLabel)) {
+            sawFinalPreTransferTransition = true;
+        }
         if (state.programCounterBank == 02 && state.programCounterOffset == 01101) {
             if (!dispatchCapturedNovacRequest()) {
                 return false;
@@ -482,10 +524,8 @@ bool NativeApolloCore::runInstructionRoutedApolloInput(
         if (state.executionNote == "RESUME") {
             sawResume = true;
         } else if (sawResume && pendingExecutiveRequest_.active) {
-            const bool atSupdxchz = state.programCounterBank == 02 && state.programCounterOffset == kSupdxchzOffset;
-            const bool atSupdxchzPlusOne =
-                state.programCounterBank == 02 && state.programCounterOffset == kSupdxchzPlusOneOffset;
-            if (atSupdxchz || atSupdxchzPlusOne) {
+            if (isNaturalSupdxchzTransferState(*cpu_)) {
+                const bool atSupdxchzPlusOne = state.programCounterOffset == kSupdxchzPlusOneOffset;
                 if (!armPendingExecutiveRequestAtCurrentTransferState(atSupdxchzPlusOne)) {
                     return false;
                 }
@@ -506,6 +546,11 @@ bool NativeApolloCore::runInstructionRoutedApolloInput(
     }
 
     if (pendingExecutiveRequest_.active) {
+        if (sawFinalPreTransferTransition) {
+            if (continueFinalTransitionToNaturalTransfer(256)) {
+                return true;
+            }
+        }
         if (!dispatchPendingExecutiveRequest()) {
             return false;
         }

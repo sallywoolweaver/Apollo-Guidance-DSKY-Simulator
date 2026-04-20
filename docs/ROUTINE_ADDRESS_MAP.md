@@ -57,8 +57,10 @@ Those files are derived debugging artifacts, not Apollo artifacts.
 - `NUCHANG2` -> bank `01`, offset `3011`, source `EXECUTIVE.agc`, section `NUCHANG2`
 - `DUMMYJOB` -> bank `01`, offset `3206`, source `EXECUTIVE.agc`, section `DUMMYJOB`
 - `ADVAN` -> bank `01`, offset `3214`, source `EXECUTIVE.agc`, section `ADVAN`
+- `SELFBANK` -> bank `01`, offset `3224`, source `EXECUTIVE.agc`, section `SELFBANK`
 - `NUDIRECT` -> bank `01`, offset `3225`, source `EXECUTIVE.agc`, section `NUDIRECT`
 - `SUPDXCHZ` -> bank `02`, offset `3165`, source `EXECUTIVE.agc`, section `SUPDXCHZ`
+- `TASKOVER` -> bank `02`, offset `3261`, source `WAITLIST.agc`, section `TASKOVER`
 - `INTRSM` -> bank `03`, offset `2050`, source `INTERPRETER.agc`, section `INTRSM`
 - `RESUME` -> bank `02`, offset `3270`, source `WAITLIST.agc`, section `RESUME`
 - `NOQRSM` -> bank `02`, offset `3272`, source `WAITLIST.agc`, section `NOQRSM`
@@ -105,9 +107,19 @@ Those files are derived debugging artifacts, not Apollo artifacts.
     - the routed key path now keeps stepping on exact Apollo-owned state until:
       - exact natural `SUPDXCHZ` / `SUPDXCHZ +1` transfer state is reached
       - or the overall routed-step budget ends and the remaining fallback primitive is forced
+    - if the overall routed-step budget ends after Apollo has already entered the exact final pre-transfer transition slice:
+      - `JOBSLP1`
+      - `JOBSLP2`
+      - `NUCHANG2`
+      - `DUMMYJOB`
+      - `ADVAN`
+      - `SELFBANK`
+      - `NUDIRECT`
+      the runtime now gives that exact Apollo slice one last continuation window to reach natural `SUPDXCHZ` / `SUPDXCHZ +1` transfer state before any forced late dispatch is allowed
     - if the requested job still has not become self-dispatching after the extended post-`RESUME` Apollo execution window, the remaining fallback now loads the Apollo-captured `NEWLOC` / `NEWLOC+1` `2CADR` request state into `A+L` and enters exact `SUPDXCHZ` instead of jumping directly to a decoded target label
     - after `SUPDXCHZ`, post-dispatch completion can now stop on exact Executive/Interpreter aftermath labels:
       - `ENDPRCHG`
+      - `TASKOVER`
       - `INTRSM`
     - only if those exact completion boundaries are not reached does the older post-target instruction budget still end the routed flow
     - after that late `2CADR`-derived dispatch, the core now waits for the Apollo-requested target bank/offset or label to become active and only then allows a smaller bounded post-target execution window
@@ -131,6 +143,9 @@ Those files are derived debugging artifacts, not Apollo artifacts.
 - The active key-input path now exercises more of Apollo's interrupt-return preparation before the remaining dispatch.
 - The active key-input path now uses more honest interrupt lead-in storage and a real Apollo `RESUME` instruction before the remaining fallback can occur.
 - The remaining late dispatch is now sourced from Apollo-captured `2CADR` request words and handed to exact Apollo `SUPDXCHZ` rather than to a single hard-coded `CHARIN` target.
+- The remaining routed-step exhaustion fallback is now narrower because exact Apollo state in the final pre-transfer transition slice gets its own continuation path to natural transfer before any forced handoff is allowed.
+- The current Luminary 099 erasable initializer now also carries the exact Apollo fresh-start `SELFRET` word needed by the `ADVAN -> SELFBANK -> SUPDXCHZ +1` idle/self-check dispatch path.
+- The native CPU now uses one’s-complement end-around-carry arithmetic for `AD`, `ADS`, and `SU`, which is directly relevant to the routed Executive state transitions that decide whether Apollo marks `NEWJOB` and reaches the natural transfer corridor on its own.
 - The source/debug path can now resolve several exact live Apollo labels to real source files and sections.
 
 ## What remains uncertain or incomplete
@@ -144,8 +159,12 @@ Those files are derived debugging artifacts, not Apollo artifacts.
   - `JOBSLP1` at `01:2776`
   - `JOBSLP2` at `01:3007`
   - `NUCHANG2` at `01:3011`
+  - `TASKOVER` at `02:3261`
   - `INTRSM` at `03:2050`
+- The final pre-transfer slice now also includes exact runtime visibility for:
+  - `SELFBANK` at `01:3224`
 - The current remaining invocation trigger is smaller than before because it now waits for exact natural `SUPDXCHZ` / `SUPDXCHZ +1` transfer state instead of dispatching at the earlier scheduler labels, and the old separate post-`RESUME` invocation timer is gone, but it is still not full Apollo job scheduling and interrupt return.
+- The current remaining invocation trigger is still not gone, because the pending request is not yet proven to become self-dispatching purely from Apollo-owned scheduler state even after the arithmetic correction in this pass.
 - A stronger local alignment check now exists in:
   - `third_party/_derived_tools/luminary099_executive_alignment_check.txt`
   - it confirms exact:

@@ -45,6 +45,7 @@
     - `ADS`
     - `SU`
     on the routed Executive/scheduler path, replacing a plain masked binary approximation in that state transition logic
+  - the native CPU now fetches executable erasable/central instructions from actual erasable/central state instead of always substituting a rope fetch, which is required for exact Apollo transfer/completion aftermath that depends on executable register or erasable words such as `SUPDXCHZ` `TC L`
   - corrected Apollo double-word CPU semantics for `DCA`, `DAS`, and `DXCH`
   - more honest interrupt lead-in seeding for the routed key path via `ARUPT`, `LRUPT`, `BRUPT`, and interrupted `BBANK`
   - Apollo-corrected channel-10 relay-row decoding for visible DSKY register digits and signs

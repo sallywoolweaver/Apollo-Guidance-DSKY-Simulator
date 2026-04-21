@@ -872,6 +872,46 @@
   - local fallback command parsing and entry buffering still remain when Apollo display/input ownership is absent
   - phase ownership, telemetry, and mission outcomes remain compatibility-owned
 
+## 2026-04-20 - executable erasable/central instruction fetch is now Apollo-owned, but the last forced handoff still remains
+
+- What changed:
+  - corrected native instruction fetch so the CPU no longer always fetches from rope
+  - when `Z` points into executable erasable/central space below `02000`, the native CPU now fetches the actual erasable/central word at that address
+  - fixed-memory fetch and rope-label lookup remain unchanged for fixed-bank instruction addresses
+  - preserved all current exact routed boundaries:
+    - `JOBSLP1`
+    - `JOBSLP2`
+    - `NUCHANG2`
+    - natural `SUPDXCHZ` / `SUPDXCHZ +1`
+    - completion-side `ENDPRCHG` / `TASKOVER` / `INTRSM`
+- Apollo artifact used:
+  - `third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc`
+  - `third_party/apollo/apollo11/lm/luminary099/WAITLIST.agc`
+- Which exact Apollo labels in the final remaining transition segment are now exercised:
+  - no newly runtime-proven final-segment labels were added in this pass
+  - the currently proven exercised slice remains:
+    - `JOBSLP1`
+    - `JOBSLP2`
+    - `NUCHANG2`
+    - `DUMMYJOB`
+    - `ADVAN`
+    - `NUDIRECT`
+- What final forced handoff or completion budget was reduced or removed:
+  - none removed in this pass
+  - this pass removes a real CPU execution-semantic mismatch on the exact transfer/completion path, but the final forced handoff and the post-`SUPDXCHZ` completion budget were not claimed reduced without runtime proof
+- What runtime consequence is now more Apollo-driven:
+  - Apollo-owned executable erasable/central instructions can now actually execute as instructions instead of being replaced by an incorrect rope fetch
+  - this is directly relevant to exact Apollo aftermath on this path where control transfers depend on executable register/erasable state, including:
+    - `SUPDXCHZ` `TC L`
+    - `ENDPRCHG` / `DTCB`-style return sequencing
+  - the remaining transfer/completion path is therefore less emulator-distorted even though no new runtime label proof is claimed yet
+- What still remains fallback/custom:
+  - the final forced handoff still exists if Apollo still does not reach natural `SUPDXCHZ` / `SUPDXCHZ +1` transfer state before routed-step exhaustion
+  - the post-`SUPDXCHZ` completion budget still exists when exact `ENDPRCHG`, `TASKOVER`, or `INTRSM` are not reached
+  - the pending routed request is still not made self-dispatching purely from Apollo-owned scheduler/job-switch state
+  - local fallback command parsing and entry buffering still remain when Apollo display/input ownership is absent
+  - phase ownership, telemetry, and mission outcomes remain compatibility-owned
+
 ## Preserved earlier gains
 
 - native CPU rope-label execution tracking

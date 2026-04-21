@@ -70,6 +70,7 @@ class ProgramAssetLoader(
     private fun parseBinsourceToRopeBinary(text: String): ParsedRopeBinary {
         val words = IntArray(36 * 1024)
         var currentBank = -1
+        var currentOffset = 0
         var useParity = false
         var firstBank = -1
         var firstOffset = -1
@@ -85,6 +86,7 @@ class ProgramAssetLoader(
                 }
                 line.startsWith("BANK=") -> {
                     currentBank = line.substringAfter('=').trim().toInt(radix = 8)
+                    currentOffset = 0
                 }
                 line.startsWith("NUMBANKS=") || line.startsWith("CHECKWORDS=") || line.startsWith("BUGGER=") -> {
                 }
@@ -94,10 +96,10 @@ class ProgramAssetLoader(
                     if (tokens.isEmpty()) {
                         return@forEach
                     }
-                    val hasAddressPrefix = tokens.size >= 2 &&
+                    val hasAddressPrefix = tokens.size > 8 &&
                         tokens.first().length == 6 &&
                         octalWordRegex.matches(tokens.first())
-                    var offset = if (hasAddressPrefix) tokens.first().toInt(radix = 8) else 0
+                    var offset = if (hasAddressPrefix) tokens.first().toInt(radix = 8) else currentOffset
                     val dataTokens = if (hasAddressPrefix) tokens.drop(1) else tokens
                     dataTokens.forEach { token ->
                         if (!octalWordRegex.matches(token)) {
@@ -105,7 +107,7 @@ class ProgramAssetLoader(
                         }
                         val parsed = token.toInt(radix = 8)
                         val normalized = if (useParity) parsed shr 3 else parsed
-                        val word = (normalized shl 1) and 0xFFFF
+                        val word = normalized and 0xFFFF
                         val index = currentBank * 1024 + (offset and 0x3FF)
                         require(index in words.indices) { "Rope word index $index out of range for bank $currentBank offset $offset" }
                         words[index] = word
@@ -115,6 +117,7 @@ class ProgramAssetLoader(
                         }
                         offset += 1
                     }
+                    currentOffset = offset
                 }
             }
         }

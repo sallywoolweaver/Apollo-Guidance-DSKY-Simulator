@@ -55,6 +55,7 @@ void AgcCpu::initialize() {
     state_.interruptsEnabled = true;
     state_.outputChannel7 = 0;
     state_.extendFlag = false;
+    state_.programCounterInErasable = false;
     state_.initialized = true;
 }
 
@@ -67,6 +68,7 @@ void AgcCpu::loadProgramContext(const AgcProgramImage& image, const std::string&
     state_.programCounterBank = image.firstRopeBank;
     state_.programCounterOffset = image.firstRopeOffset;
     state_.executionNote = "Program image loaded";
+    state_.programCounterInErasable = false;
 }
 
 void AgcCpu::resetForScenario(const AgcProgramImage& image, const std::string& requestedProgram) {
@@ -100,6 +102,7 @@ void AgcCpu::resetForScenario(const AgcProgramImage& image, const std::string& r
     state_.currentLabel.clear();
     state_.executedLabels.clear();
     state_.executionNote = "Instruction-step skeleton active";
+    state_.programCounterInErasable = false;
 }
 
 void AgcCpu::requestMajorMode(int majorMode) {
@@ -115,6 +118,7 @@ void AgcCpu::jumpToBankOffset(uint16_t bank, uint16_t offset) {
     }
     state_.programCounterBank = bank & 077;
     state_.programCounterOffset = offset & 01777;
+    state_.programCounterInErasable = false;
     state_.runState = CpuRunState::EXECUTING;
 }
 
@@ -200,9 +204,15 @@ void AgcCpu::stepInstruction(AgcMemoryImage& memoryImage) {
     }
 
     branchTaken_ = false;
-    const uint16_t ropeWord = memoryImage.ropeWord(state_.programCounterBank, state_.programCounterOffset);
-    state_.currentLabel = memoryImage.ropeLabel(state_.programCounterBank, state_.programCounterOffset);
-    const uint16_t effectiveWord = applyIndexToInstruction(ropeWord);
+    uint16_t fetchedWord = 0;
+    if (state_.programCounterInErasable) {
+        fetchedWord = readOperand12(static_cast<uint16_t>(state_.programCounterOffset), memoryImage);
+        state_.currentLabel.clear();
+    } else {
+        fetchedWord = memoryImage.ropeWord(state_.programCounterBank, state_.programCounterOffset);
+        state_.currentLabel = memoryImage.ropeLabel(state_.programCounterBank, state_.programCounterOffset);
+    }
+    const uint16_t effectiveWord = applyIndexToInstruction(fetchedWord);
     state_.lastFetchedWord = effectiveWord;
     executeFetchedWord(effectiveWord, memoryImage);
     if (!state_.currentLabel.empty()) {
@@ -356,20 +366,24 @@ void AgcCpu::setProgramCounterFromAddress(uint16_t address12) {
     const uint16_t address = address12 & kAddressMask12;
     if (address < 02000) {
         state_.programCounterOffset = address;
+        state_.programCounterInErasable = true;
         return;
     }
     if (address < 04000) {
         state_.programCounterBank = fixedBankForAddress(address);
         state_.programCounterOffset = address & 01777;
+        state_.programCounterInErasable = false;
         return;
     }
     if (address < 06000) {
         state_.programCounterBank = 02;
         state_.programCounterOffset = address & 01777;
+        state_.programCounterInErasable = false;
         return;
     }
     state_.programCounterBank = 03;
     state_.programCounterOffset = address & 01777;
+    state_.programCounterInErasable = false;
 }
 
 void AgcCpu::syncBankRegisters() {
@@ -421,6 +435,10 @@ void AgcCpu::writeOperandPair(uint16_t address10, uint16_t highWord, uint16_t lo
 }
 
 void AgcCpu::advanceProgramCounter() {
+    if (state_.programCounterInErasable) {
+        setProgramCounterFromAddress(static_cast<uint16_t>((state_.programCounterOffset + 1) & kAddressMask12));
+        return;
+    }
     state_.programCounterOffset += 1;
     if (state_.programCounterOffset >= 02000) {
         state_.programCounterOffset = 0;
@@ -473,7 +491,13 @@ void AgcCpu::executeFetchedWord(uint16_t word, AgcMemoryImage& memoryImage) {
                 state_.supportedOpcodeSkeletonCount++;
                 state_.executionNote = "EXTEND";
             } else if (address12 == kRegQ) {
-                setProgramCounterFromAddress(state_.qRegister);
+                if ((state_.qRegister & kAddressMask12) < 02000) {
+                    state_.programCounterBank = fixedBankForAddress(state_.qRegister);
+                    state_.programCounterOffset = state_.qRegister & 01777;
+                    state_.programCounterInErasable = false;
+                } else {
+                    setProgramCounterFromAddress(state_.qRegister);
+                }
                 branchTaken_ = true;
                 state_.supportedOpcodeSkeletonCount++;
                 state_.executionNote = "TC Q";

@@ -146,6 +146,7 @@ Those files are derived debugging artifacts, not Apollo artifacts.
 - The remaining routed-step exhaustion fallback is now narrower because exact Apollo state in the final pre-transfer transition slice gets its own continuation path to natural transfer before any forced handoff is allowed.
 - The current Luminary 099 erasable initializer now also carries the exact Apollo fresh-start `SELFRET` word needed by the `ADVAN -> SELFBANK -> SUPDXCHZ +1` idle/self-check dispatch path.
 - The native CPU now uses one’s-complement end-around-carry arithmetic for `AD`, `ADS`, and `SU`, which is directly relevant to the routed Executive state transitions that decide whether Apollo marks `NEWJOB` and reaches the natural transfer corridor on its own.
+- The native CPU now also fetches executable erasable/central instructions from actual erasable/central state instead of always substituting a rope word, which is directly relevant to exact Apollo aftermath that depends on instructions such as `TC L` after `SUPDXCHZ`.
 - The source/debug path can now resolve several exact live Apollo labels to real source files and sections.
 
 ## What remains uncertain or incomplete
@@ -165,6 +166,7 @@ Those files are derived debugging artifacts, not Apollo artifacts.
   - `SELFBANK` at `01:3224`
 - The current remaining invocation trigger is smaller than before because it now waits for exact natural `SUPDXCHZ` / `SUPDXCHZ +1` transfer state instead of dispatching at the earlier scheduler labels, and the old separate post-`RESUME` invocation timer is gone, but it is still not full Apollo job scheduling and interrupt return.
 - The current remaining invocation trigger is still not gone, because the pending request is not yet proven to become self-dispatching purely from Apollo-owned scheduler state even after the arithmetic correction in this pass.
+- The current remaining invocation trigger is also not yet proven gone after the executable-erasable fetch correction in this pass; no new runtime label proof is claimed yet from that semantic fix alone.
 - A stronger local alignment check now exists in:
   - `third_party/_derived_tools/luminary099_executive_alignment_check.txt`
   - it confirms exact:

@@ -98,6 +98,7 @@
   instead of dispatching at the first proven scheduler-label boundary
 - the old separate late invocation timer after `RESUME` is gone
 - the routed key path now waits on exact Apollo transition-gap and natural transfer state until the overall routed-step bound is exhausted
+- the native CPU now fetches executable erasable/central instructions from actual erasable/central state instead of always substituting a rope fetch, which is required by exact Apollo control-transfer aftermath such as `SUPDXCHZ` `TC L`
 - if the overall routed-step bound is exhausted after Apollo has already entered the exact final pre-transfer transition slice:
   - `JOBSLP1`
   - `JOBSLP2`

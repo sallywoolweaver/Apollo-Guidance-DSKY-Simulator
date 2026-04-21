@@ -96,6 +96,7 @@ struct AgcCpuState {
     uint32_t supportedOpcodeSkeletonCount = 0;
     int programCounterBank = 0;
     int programCounterOffset = 0;
+    bool programCounterInErasable = false;
     std::string currentLabel;
     std::vector<std::string> executedLabels;
     std::string executionNote = "CPU idle";

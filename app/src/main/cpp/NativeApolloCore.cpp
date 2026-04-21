@@ -10,7 +10,11 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdarg>
+#include <cstdio>
 #include <string>
+
+#include <android/log.h>
 
 namespace apollo {
 
@@ -23,6 +27,24 @@ constexpr uint16_t kBruptAddress = 017;
 constexpr int kPostDispatchTargetBudget = 128;
 constexpr uint16_t kSupdxchzOffset = 03165 & 01777;
 constexpr uint16_t kSupdxchzPlusOneOffset = 03166 & 01777;
+constexpr uint16_t kNewJobAddress = 067;
+constexpr uint16_t kLocAddress = 0164;
+constexpr uint16_t kBankSetAddress = 0165;
+constexpr uint16_t kPriorityAddress = 0167;
+constexpr char kExecTraceTag[] = "ApolloExecTrace";
+
+void logExecutiveTrace(const char* message) {
+    __android_log_write(ANDROID_LOG_INFO, kExecTraceTag, message);
+}
+
+void logExecutiveTracef(const char* format, ...) {
+    char buffer[512];
+    va_list args;
+    va_start(args, format);
+    std::vsnprintf(buffer, sizeof(buffer), format, args);
+    va_end(args);
+    logExecutiveTrace(buffer);
+}
 
 bool isSchedulerDispatchBoundaryLabel(const std::string& label) {
     return label == "ADVAN" || label == "NUDIRECT" || label == "CHANJOB";
@@ -41,6 +63,16 @@ bool isNaturalSupdxchzTransferState(const AgcCpu& cpu) {
     const auto& state = cpu.state();
     return state.programCounterBank == 02 &&
         (state.programCounterOffset == kSupdxchzOffset || state.programCounterOffset == kSupdxchzPlusOneOffset);
+}
+
+bool isExecutiveTraceLabel(const std::string& label) {
+    return label == "KEYRUPT1" || label == "KEYCOM" || label == "ACCEPTUP" || label == "LODSAMPT" ||
+        label == "NOVAC" || label == "NOVAC2" || label == "NOVAC3" || label == "CORFOUND" ||
+        label == "RESUME" || label == "NOQRSM" || label == "NOQBRSM" ||
+        label == "SPECTEST" || label == "SETLOC" || label == "CHANJOB" ||
+        label == "ENDPRCHG" || label == "JOBSLP1" || label == "JOBSLP2" || label == "NUCHANG2" ||
+        label == "DUMMYJOB" || label == "ADVAN" || label == "SELFBANK" || label == "NUDIRECT" ||
+        label == "SUPDXCHZ" || label == "TASKOVER" || label == "INTRSM";
 }
 
 struct ProgramPackageSections {
@@ -377,6 +409,15 @@ bool NativeApolloCore::dispatchCapturedNovacRequest() {
 
     request.targetLabel = memoryImage_->ropeLabel(request.targetBank, request.targetOffset);
     pendingExecutiveRequest_ = request;
+    logExecutiveTracef(
+        "captured request site=%s target=%02o:%04o label=%s targetAddress=%04o bankWord=%05o",
+        request.requestSiteLabel.c_str(),
+        request.targetBank,
+        request.targetOffset,
+        request.targetLabel.c_str(),
+        request.targetAddress,
+        request.bankWord
+    );
     return pendingExecutiveRequest_.active;
 }
 
@@ -391,6 +432,14 @@ bool NativeApolloCore::dispatchPendingExecutiveRequest() {
     activeDispatchTarget_.label = pendingExecutiveRequest_.targetLabel;
     cpu_->setAccumulator(pendingExecutiveRequest_.targetAddress);
     cpu_->setLRegister(pendingExecutiveRequest_.bankWord);
+    logExecutiveTracef(
+        "forced handoff target=%02o:%04o label=%s targetAddress=%04o bankWord=%05o",
+        activeDispatchTarget_.bank,
+        activeDispatchTarget_.offset,
+        activeDispatchTarget_.label.c_str(),
+        pendingExecutiveRequest_.targetAddress,
+        pendingExecutiveRequest_.bankWord
+    );
     if (!jumpToLabel("SUPDXCHZ")) {
         activeDispatchTarget_ = ActiveDispatchTarget{};
         return false;
@@ -417,6 +466,16 @@ bool NativeApolloCore::armPendingExecutiveRequestAtCurrentTransferState(bool atS
         cpu_->setLRegister(pendingExecutiveRequest_.bankWord);
     }
 
+    logExecutiveTracef(
+        "natural transfer state=%s target=%02o:%04o label=%s targetAddress=%04o bankWord=%05o",
+        atSupdxchzPlusOne ? "SUPDXCHZ+1" : "SUPDXCHZ",
+        activeDispatchTarget_.bank,
+        activeDispatchTarget_.offset,
+        activeDispatchTarget_.label.c_str(),
+        pendingExecutiveRequest_.targetAddress,
+        pendingExecutiveRequest_.bankWord
+    );
+
     pendingExecutiveRequest_ = PendingExecutiveRequest{};
     return true;
 }
@@ -424,14 +483,46 @@ bool NativeApolloCore::armPendingExecutiveRequestAtCurrentTransferState(bool atS
 bool NativeApolloCore::continueAfterExecutiveDispatch(int maxInstructions) {
     bool reachedTarget = false;
     int postTargetInstructions = 0;
+    uint32_t lastUnsupportedCount = cpu_->state().unsupportedOpcodeCount;
+    std::string lastTraceLabel;
     for (int instruction = 0; instruction < maxInstructions; ++instruction) {
         cpu_->stepInstruction(*memoryImage_);
         const auto& state = cpu_->state();
+        if (state.unsupportedOpcodeCount != lastUnsupportedCount) {
+            lastUnsupportedCount = state.unsupportedOpcodeCount;
+            logExecutiveTracef(
+                "unsupported post-dispatch pc=%02o:%04o label=%s note=%s",
+                state.programCounterBank,
+                state.programCounterOffset,
+                state.currentLabel.c_str(),
+                state.executionNote.c_str()
+            );
+        }
+        if (isExecutiveTraceLabel(state.currentLabel) && state.currentLabel != lastTraceLabel) {
+            lastTraceLabel = state.currentLabel;
+            logExecutiveTracef(
+                "post-dispatch label=%s pc=%02o:%04o note=%s newjob=%05o loc=%05o bankset=%05o priority=%05o",
+                state.currentLabel.c_str(),
+                state.programCounterBank,
+                state.programCounterOffset,
+                state.executionNote.c_str(),
+                memoryImage_->erasableWord(kNewJobAddress),
+                memoryImage_->erasableWord(kLocAddress),
+                memoryImage_->erasableWord(kBankSetAddress),
+                memoryImage_->erasableWord(kPriorityAddress)
+            );
+        }
         if (state.currentLabel == "CHARIN2") {
             activeDispatchTarget_ = ActiveDispatchTarget{};
             return true;
         }
         if (isExecutiveCompletionBoundaryLabel(state.currentLabel)) {
+            logExecutiveTracef(
+                "completion boundary=%s pc=%02o:%04o",
+                state.currentLabel.c_str(),
+                state.programCounterBank,
+                state.programCounterOffset
+            );
             activeDispatchTarget_ = ActiveDispatchTarget{};
             return true;
         }
@@ -444,10 +535,22 @@ bool NativeApolloCore::continueAfterExecutiveDispatch(int maxInstructions) {
             if (labelMatched || addressMatched) {
                 reachedTarget = true;
                 postTargetInstructions = 0;
+                logExecutiveTracef(
+                    "dispatch target active pc=%02o:%04o label=%s",
+                    state.programCounterBank,
+                    state.programCounterOffset,
+                    state.currentLabel.c_str()
+                );
             }
         } else if (reachedTarget) {
             postTargetInstructions += 1;
             if (postTargetInstructions >= kPostDispatchTargetBudget) {
+                logExecutiveTracef(
+                    "post-dispatch budget exhausted target=%02o:%04o label=%s",
+                    activeDispatchTarget_.bank,
+                    activeDispatchTarget_.offset,
+                    activeDispatchTarget_.label.c_str()
+                );
                 activeDispatchTarget_ = ActiveDispatchTarget{};
                 return true;
             }
@@ -468,9 +571,35 @@ bool NativeApolloCore::continueAfterExecutiveDispatch(int maxInstructions) {
 }
 
 bool NativeApolloCore::continueFinalTransitionToNaturalTransfer(int maxInstructions) {
+    uint32_t lastUnsupportedCount = cpu_->state().unsupportedOpcodeCount;
+    std::string lastTraceLabel;
     for (int instruction = 0; instruction < maxInstructions; ++instruction) {
         cpu_->stepInstruction(*memoryImage_);
         const auto& state = cpu_->state();
+        if (state.unsupportedOpcodeCount != lastUnsupportedCount) {
+            lastUnsupportedCount = state.unsupportedOpcodeCount;
+            logExecutiveTracef(
+                "unsupported final-transition pc=%02o:%04o label=%s note=%s",
+                state.programCounterBank,
+                state.programCounterOffset,
+                state.currentLabel.c_str(),
+                state.executionNote.c_str()
+            );
+        }
+        if (isExecutiveTraceLabel(state.currentLabel) && state.currentLabel != lastTraceLabel) {
+            lastTraceLabel = state.currentLabel;
+            logExecutiveTracef(
+                "final-transition label=%s pc=%02o:%04o note=%s newjob=%05o loc=%05o bankset=%05o priority=%05o",
+                state.currentLabel.c_str(),
+                state.programCounterBank,
+                state.programCounterOffset,
+                state.executionNote.c_str(),
+                memoryImage_->erasableWord(kNewJobAddress),
+                memoryImage_->erasableWord(kLocAddress),
+                memoryImage_->erasableWord(kBankSetAddress),
+                memoryImage_->erasableWord(kPriorityAddress)
+            );
+        }
         if (state.programCounterBank == 02 && state.programCounterOffset == 01101) {
             if (!dispatchCapturedNovacRequest()) {
                 return false;
@@ -502,8 +631,12 @@ bool NativeApolloCore::runInstructionRoutedApolloInput(
     activeDispatchTarget_ = ActiveDispatchTarget{};
     bool sawResume = false;
     bool sawFinalPreTransferTransition = false;
+    uint32_t lastUnsupportedCount = cpu_->state().unsupportedOpcodeCount;
+    std::string lastTraceLabel;
+    logExecutiveTracef("routed input start entry=%s maxInstructions=%d", entryLabel.c_str(), maxInstructions);
     primeApolloKeyruptLeadInState();
     if (!jumpToLabelWithSwitchedBank(entryLabel, 04)) {
+        logExecutiveTracef("routed input jump failed entry=%s", entryLabel.c_str());
         return false;
     }
 
@@ -511,6 +644,43 @@ bool NativeApolloCore::runInstructionRoutedApolloInput(
         cpu_->stepInstruction(*memoryImage_);
 
         const auto& state = cpu_->state();
+        if (instruction < 24) {
+            logExecutiveTracef(
+                "routed step=%d pc=%02o:%04o label=%s note=%s q=%05o a=%05o l=%05o",
+                instruction,
+                state.programCounterBank,
+                state.programCounterOffset,
+                state.currentLabel.c_str(),
+                state.executionNote.c_str(),
+                state.qRegister,
+                state.accumulator,
+                state.lRegister
+            );
+        }
+        if (state.unsupportedOpcodeCount != lastUnsupportedCount) {
+            lastUnsupportedCount = state.unsupportedOpcodeCount;
+            logExecutiveTracef(
+                "unsupported routed pc=%02o:%04o label=%s note=%s",
+                state.programCounterBank,
+                state.programCounterOffset,
+                state.currentLabel.c_str(),
+                state.executionNote.c_str()
+            );
+        }
+        if (isExecutiveTraceLabel(state.currentLabel) && state.currentLabel != lastTraceLabel) {
+            lastTraceLabel = state.currentLabel;
+            logExecutiveTracef(
+                "routed label=%s pc=%02o:%04o note=%s newjob=%05o loc=%05o bankset=%05o priority=%05o",
+                state.currentLabel.c_str(),
+                state.programCounterBank,
+                state.programCounterOffset,
+                state.executionNote.c_str(),
+                memoryImage_->erasableWord(kNewJobAddress),
+                memoryImage_->erasableWord(kLocAddress),
+                memoryImage_->erasableWord(kBankSetAddress),
+                memoryImage_->erasableWord(kPriorityAddress)
+            );
+        }
         if (isFinalPreTransferTransitionLabel(state.currentLabel)) {
             sawFinalPreTransferTransition = true;
         }
@@ -523,6 +693,15 @@ bool NativeApolloCore::runInstructionRoutedApolloInput(
 
         if (state.executionNote == "RESUME") {
             sawResume = true;
+            logExecutiveTracef(
+                "resume pc=%02o:%04o newjob=%05o loc=%05o bankset=%05o priority=%05o",
+                state.programCounterBank,
+                state.programCounterOffset,
+                memoryImage_->erasableWord(kNewJobAddress),
+                memoryImage_->erasableWord(kLocAddress),
+                memoryImage_->erasableWord(kBankSetAddress),
+                memoryImage_->erasableWord(kPriorityAddress)
+            );
         } else if (sawResume && pendingExecutiveRequest_.active) {
             if (isNaturalSupdxchzTransferState(*cpu_)) {
                 const bool atSupdxchzPlusOne = state.programCounterOffset == kSupdxchzPlusOneOffset;
@@ -535,12 +714,14 @@ bool NativeApolloCore::runInstructionRoutedApolloInput(
 
         if (!pendingExecutiveRequest_.active) {
             if (state.currentLabel == "CHARIN2") {
+                logExecutiveTrace("routed input completed at CHARIN2 without pending request");
                 return true;
             }
             continue;
         }
 
         if (state.currentLabel == "CHARIN2") {
+            logExecutiveTrace("routed input completed at CHARIN2 with pending request already cleared");
             return true;
         }
     }
@@ -551,17 +732,30 @@ bool NativeApolloCore::runInstructionRoutedApolloInput(
                 return true;
             }
         }
+        logExecutiveTracef(
+            "routed-step exhaustion pending target=%02o:%04o label=%s newjob=%05o loc=%05o bankset=%05o priority=%05o",
+            pendingExecutiveRequest_.targetBank,
+            pendingExecutiveRequest_.targetOffset,
+            pendingExecutiveRequest_.targetLabel.c_str(),
+            memoryImage_->erasableWord(kNewJobAddress),
+            memoryImage_->erasableWord(kLocAddress),
+            memoryImage_->erasableWord(kBankSetAddress),
+            memoryImage_->erasableWord(kPriorityAddress)
+        );
         if (!dispatchPendingExecutiveRequest()) {
             return false;
         }
         return continueAfterExecutiveDispatch(512);
     }
+    logExecutiveTrace("routed input ended without pending request");
     return true;
 }
 
 bool NativeApolloCore::routeApolloDskyInput(const std::string& key) {
     if (key == "PRO") {
+        logExecutiveTrace("route key=PRO");
         if (!jumpToLabelWithSwitchedBank("PROCKEY", 040)) {
+            logExecutiveTrace("route PRO jump failed");
             return false;
         }
         for (int instruction = 0; instruction < 48; ++instruction) {
@@ -575,8 +769,15 @@ bool NativeApolloCore::routeApolloDskyInput(const std::string& key) {
 
     const uint16_t keycode = dskyKeycodeForKey(key);
     if (keycode == 0) {
+        logExecutiveTracef("route key=%s rejected unknown keycode", key.c_str());
         return false;
     }
+    logExecutiveTracef(
+        "route key=%s keycode=%u entryPoints=%s",
+        key.c_str(),
+        keycode,
+        hasApolloDskyEntryPoints() ? "yes" : "no"
+    );
     memoryImage_->writeErasableWord(kMpacAddress, keycode);
     memoryImage_->writeErasableWord(kNewLocAddress, 0);
     memoryImage_->writeErasableWord(kNewLocAddress + 1, 0);

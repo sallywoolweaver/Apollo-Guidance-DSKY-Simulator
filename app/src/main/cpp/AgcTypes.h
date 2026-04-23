@@ -90,6 +90,7 @@ struct AgcCpuState {
     bool interruptsEnabled = true;
     uint16_t outputChannel7 = 0;
     bool extendFlag = false;
+    bool preserveExtendForNextInstruction = false;
     uint16_t lastFetchedWord = 0;
     uint16_t lastOpcodeClass = 0;
     uint32_t unsupportedOpcodeCount = 0;

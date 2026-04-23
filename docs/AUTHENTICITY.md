@@ -46,6 +46,17 @@
     - `SU`
     on the routed Executive/scheduler path, replacing a plain masked binary approximation in that state transition logic
   - the native CPU now fetches executable erasable/central instructions from actual erasable/central state instead of always substituting a rope fetch, which is required for exact Apollo transfer/completion aftermath that depends on executable register or erasable words such as `SUPDXCHZ` `TC L`
+  - the routed interrupt entry now clears stale pending `INDEX` / `EXTEND` state before `KEYRUPT1`, matching Apollo interrupt-vector behavior instead of leaking emulator timing residue into the interrupt-side path
+  - the native CPU now carries full Apollo-style 12-bit `Z` / `Q` return addresses on the routed path rather than only bank-local offsets, which is required by the exact `NOVAC` `INDEX Q / DCA 0` request-capture sequence
+  - the native CPU now preserves `EXTEND INDEX` into the following instruction on the routed path, matching the exact `NOVAC` `EXTEND / INDEX Q / DCA 0` sequence
+  - the native CPU now uses Apollo-correct `DCA` / `DXCH` pair ordering on the routed request-capture path, so exact `NOVAC / DXCH NEWLOC` now captures the real `2CADR CHARIN` words instead of a zero request
+  - the native CPU now supports the exact post-capture routed opcode classes that had been blocking the Apollo aftermath:
+    - extended `DCS`
+    - extended `AUG`
+  - the remaining post-capture request observer/target-consumer now decodes captured `2CADR` bank words with exact Apollo `Parse2CADR` superbank semantics rather than flattening them to `(bankWord >> 10) & 037`; routed tracing now proves the captured `02077 / 60101` request as effective target `40:0077`
+  - the routed post-`SUPDXCHZ` key path no longer stops on a local `CHARIN2` shortcut; it now continues through exact Apollo-owned `CHARIN_PREENTRY` / `CHARIN` / `CHARIN2` and exits on exact `ENDOFJOB`
+  - the routed outer completion path now also honors only exact Apollo completion boundaries (`ENDOFJOB`, `ENDPRCHG`, `TASKOVER`, `INTRSM`) and no longer treats `CHARIN2` itself as a completion stop
+  - the remaining forced handoff is now pinned to exact pre-transfer bank-03 interpreter aftermath at `03:0223` with `resume=no` and `finalSlice=no`, so the current unresolved ownership gap is earlier interpreter-state progression rather than the already-proven later `RESUME` / scheduler / `SUPDXCHZ` corridor
   - corrected Apollo double-word CPU semantics for `DCA`, `DAS`, and `DXCH`
   - more honest interrupt lead-in seeding for the routed key path via `ARUPT`, `LRUPT`, `BRUPT`, and interrupted `BBANK`
   - Apollo-corrected channel-10 relay-row decoding for visible DSKY register digits and signs
@@ -60,6 +71,7 @@
 - Compatibility fallback now:
   - the full Apollo-owned `KEYRUPT1` / `T4RUPT` interrupt path is still missing
   - the current key-input path still uses a narrow later emulator-side trigger for request dispatch rather than full Apollo job scheduling, core-set switching, and interrupt return
+  - after exact `NOVAC` request capture, the routed path no longer lacks the previously proven `0140` / `0124` opcode coverage, but it still depends on a custom forced-dispatch path because Apollo is not yet making the handoff inevitable before routed-step exhaustion
 - exact Executive scheduler/job-switch labels now proven by the current bank-split disassembly path:
   - `CHANJOB`
   - `ENDPRCHG`

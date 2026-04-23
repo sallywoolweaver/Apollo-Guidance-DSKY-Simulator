@@ -912,6 +912,382 @@
   - local fallback command parsing and entry buffering still remain when Apollo display/input ownership is absent
   - phase ownership, telemetry, and mission outcomes remain compatibility-owned
 
+## 2026-04-21 - routed `NOVAC` now captures the real Apollo `2CADR` request words, but the last forced handoff still remains
+
+- What changed:
+  - cleared stale routed interrupt `INDEX` / `EXTEND` state before exact `KEYRUPT1`
+  - changed indexed instruction formation to use yaAGC-style:
+    - `SignExtend`
+    - `AddSP16`
+    - `OverflowCorrected`
+  - preserved `EXTEND INDEX` into the following instruction, which is required by exact `NOVAC`:
+    - `EXTEND`
+    - `INDEX Q`
+    - `DCA 0`
+  - corrected `Z` / `Q` so the routed path carries the real Apollo 12-bit S-register return address rather than only a bank-local offset
+  - corrected `DCA` / `DXCH` pair semantics on the routed request-capture path so exact `NOVAC / DXCH NEWLOC` now stores the real `2CADR` words in `NEWLOC` / `NEWLOC +1`
+- Apollo artifact used:
+  - `third_party/apollo/apollo11/lm/luminary099/EXECUTIVE.agc`
+  - `third_party/apollo/apollo11/lm/luminary099/KEYRUPT,_UPRUPT.agc`
+  - `third_party/apollo/apollo11/lm/luminary099/PINBALL_GAME__BUTTONS_AND_LIGHTS.agc`
+  - `third_party/apollo/apollo11/lm/luminary099/AP11ROPE.binsource`
+  - `third_party/apollo/upstream/virtualagc/yaAGC/agc_engine.c`
+  - `third_party/apollo/upstream/virtualagc/yaYUL/Parse2CADR.c`
+- Which exact Apollo labels in the final remaining transition segment are now exercised:
+  - no newly mapped final-segment labels were added in this pass
+  - the currently proven exercised routed slice remains:
+    - `KEYRUPT1`
+    - `LODSAMPT`
+    - `KEYCOM`
+    - `ACCEPTUP`
+    - `NOVAC`
+    - `NOVAC_NEWLOC`
+    - `JOBSLP1`
+    - `JOBSLP2`
+    - `NUCHANG2`
+    - `DUMMYJOB`
+    - `ADVAN`
+    - `NUDIRECT`
+- What final forced handoff or completion budget was reduced or removed:
+  - none removed in this pass
+  - the final forced handoff at routed-step exhaustion still remains
+  - the post-`SUPDXCHZ` completion budget still remains
+- What exact semantic mismatch was fixed this batch:
+  - stale routed interrupt `INDEX` / `EXTEND` state leaking into exact `KEYRUPT1`
+  - incorrect indexed-instruction formation on `INDEX Q / DCA 0`
+  - missing `EXTEND INDEX` carry-through into the following instruction
+  - `Q` storing only a bank-local offset instead of the full Apollo S-register return address
+  - incorrect `DCA` / `DXCH` pair ordering on the exact `NOVAC` request-capture sequence
+- If the fallback remains, what exact semantic mismatch still blocks removal:
+  - exact `NOVAC` request capture is now runtime-proven to load the real nonzero `2CADR CHARIN` words from the callsite:
+    - `02077`
+    - `60101`
+  - after that exact Apollo request capture, the routed path still hits unsupported Apollo opcode classes before natural `SUPDXCHZ` / `SUPDXCHZ +1` transfer is reached on its own:
+    - `03:0756` -> `0140`
+    - `03:1024` -> `0124`
+    - `03:0765` -> `0140`
+  - those unsupported post-capture Apollo opcodes are now the narrowest proven blocker to eliminating the final forced handoff honestly
+- What runtime consequence is now more Apollo-driven:
+  - the routed key path no longer captures a zero request at `NOVAC_NEWLOC`
+  - it now captures the real Apollo-owned `2CADR CHARIN` words from the exact caller site instead of an emulator-zeroed substitute
+  - this moves the remaining handoff debt to after a real Apollo `2CADR` capture rather than before it
+- What still remains fallback/custom:
+  - the final forced handoff still exists if Apollo still does not reach natural `SUPDXCHZ` / `SUPDXCHZ +1` transfer state before routed-step exhaustion
+  - the post-`SUPDXCHZ` completion budget still exists when exact `ENDPRCHG`, `TASKOVER`, or `INTRSM` are not reached
+  - the forced-dispatch decoder is still custom and still does not yet consume the captured `2CADR` words in a fully Apollo-owned way
+  - the routed path still lacks support for the now-proven blocking opcode classes beyond `NOVAC_NEWLOC`
+  - local fallback command parsing and entry buffering still remain when Apollo display/input ownership is absent
+  - phase ownership, telemetry, and mission outcomes remain compatibility-owned
+
+## 2026-04-21 - exact post-capture opcode blockers `0140` and `0124` are now supported, but the last forced handoff still remains
+
+- What changed:
+  - identified the exact unsupported post-capture opcode classes from the routed aftermath trace:
+    - `0140` -> extended `DCS`
+    - `0124` -> extended `AUG`
+  - added exact native support for:
+    - `DCS` / `DCOM`
+    - `AUG`
+  - preserved all current routed proof:
+    - `KEYRUPT1`
+    - `LODSAMPT`
+    - `KEYCOM`
+    - `ACCEPTUP`
+    - `NOVAC`
+    - `NOVAC_NEWLOC`
+    - `JOBSLP1`
+    - `JOBSLP2`
+    - `NUCHANG2`
+    - `DUMMYJOB`
+    - `ADVAN`
+    - `NUDIRECT`
+    - natural `SUPDXCHZ` / `SUPDXCHZ +1`
+    - completion-side `ENDPRCHG` / `TASKOVER` / `INTRSM`
+- Apollo artifact used:
+  - `third_party/apollo/upstream/virtualagc/yaAGC/agc_engine.c`
+  - `third_party/apollo/upstream/virtualagc/yaAGC/agc_disassembler.c`
+  - `third_party/apollo/apollo11/lm/luminary099/INTERPRETER.agc`
+  - `third_party/apollo/apollo11/lm/luminary099/AP11ROPE.binsource`
+- What `0140` and `0124` were identified as:
+  - `0140` is the extended `DCS` opcode class:
+    - double-precision complement-and-load/store-family decode
+    - 12-bit address form
+    - includes the `DCOM` special case when addressed through `L`
+  - `0124` is the extended `AUG` opcode class:
+    - signed augment/increment-decrement opcode
+    - 10-bit address form
+- Which exact Apollo labels in the final remaining transition segment are now exercised:
+  - no newly mapped final-segment labels were added in this pass
+  - the currently proven exercised slice remains:
+    - `KEYRUPT1`
+    - `LODSAMPT`
+    - `KEYCOM`
+    - `ACCEPTUP`
+    - `NOVAC`
+    - `NOVAC_NEWLOC`
+    - `JOBSLP1`
+    - `JOBSLP2`
+    - `NUCHANG2`
+    - `DUMMYJOB`
+    - `ADVAN`
+    - `NUDIRECT`
+- What final forced handoff or completion budget was reduced or removed:
+  - none removed in this pass
+  - the final forced handoff at routed-step exhaustion still remains
+  - the post-`SUPDXCHZ` completion budget still remains
+- What runtime consequence is now more Apollo-driven:
+  - the routed post-capture aftermath no longer trips the previously proven unsupported opcode sites:
+    - `03:0756`
+    - `03:1024`
+    - `03:0765`
+  - the routed path now continues through those exact Apollo instructions instead of falling back on an opcode-support gap
+- What still remains fallback/custom:
+  - the final forced handoff still exists if Apollo still does not reach natural `SUPDXCHZ` / `SUPDXCHZ +1` transfer state before routed-step exhaustion
+  - the post-`SUPDXCHZ` completion budget still exists when exact `ENDPRCHG`, `TASKOVER`, or `INTRSM` are not reached
+  - the forced-dispatch decoder is still custom and still does not yet consume the captured `2CADR` words in a fully Apollo-owned way
+  - after the `0140` / `0124` support landed, the remaining blocker is no longer unsupported post-capture opcode coverage; it is the still-custom post-capture request decode / dispatch path and the lack of enough Apollo-owned aftermath to make natural transfer inevitable before routed-step exhaustion
+  - local fallback command parsing and entry buffering still remain when Apollo display/input ownership is absent
+  - phase ownership, telemetry, and mission outcomes remain compatibility-owned
+
+## 2026-04-21 - captured `2CADR` request consumption now honors exact Apollo superbank semantics, and the routed trace proves the true post-`SUPDXCHZ` target
+
+- What changed:
+  - identified the exact meaning of the routed `NOVAC_NEWLOC` capture:
+    - `02077` is the captured `2CADR` S-register word
+    - `60101` is the captured `2CADR` bank/BBCON word
+    - from exact `Parse2CADR.c` semantics, that bank word means:
+      - E-bank `1`
+      - fixed bank `030`
+      - superbank `4`
+    - therefore the captured switched-fixed request is for effective bank `040`, not `030`
+  - reduced the still-custom post-capture decode/dispatch path:
+    - replaced the old local `(bankWord >> 10) & 037` target-bank shortcut with exact `2CADR` fixed-bank decoding that honors the superbank bits in `NEWLOC +1`
+    - preserved Apollo-owned `A` / `L` request consumption by exact `SUPDXCHZ`; this pass narrowed only the remaining emulator-side observer/target-consumer around that handoff
+  - re-ran the routed device trace with the new consumer in place
+- Apollo artifact used:
+  - `third_party/apollo/upstream/virtualagc/yaYUL/Parse2CADR.c`
+  - `third_party/apollo/upstream/virtualagc/Luminary131/EXECUTIVE.agc`
+  - exact routed device trace after the native-core change
+- Which exact Apollo labels in the final remaining transition segment are now exercised:
+  - no newly mapped final-segment label was honestly proven in this pass
+  - the currently proven exercised slice remains:
+    - `KEYRUPT1`
+    - `LODSAMPT`
+    - `KEYCOM`
+    - `ACCEPTUP`
+    - `NOVAC`
+    - `NOVAC_NEWLOC`
+    - `JOBSLP1`
+    - `JOBSLP2`
+    - `NUCHANG2`
+    - `DUMMYJOB`
+    - `ADVAN`
+    - `NUDIRECT`
+- What final forced handoff or completion budget was reduced or removed:
+  - none removed in this pass
+  - the final forced handoff at routed-step exhaustion still remains
+  - the post-`SUPDXCHZ` completion budget still remains
+- What exact semantic mismatch was fixed this batch:
+  - the remaining forced-dispatch observer/target-consumer was still flattening the captured `2CADR` bank word to fixed bank `030` and dropping Apollo superbank state
+  - it now consumes the captured `2CADR` bank word with exact Apollo `Parse2CADR` bank/superbank semantics
+- If the fallback remains, what exact semantic mismatch still blocks removal:
+  - Apollo now proves the captured request as effective target `40:0077`, and after forced `SUPDXCHZ` handoff the routed trace now proves:
+    - `dispatch target active pc=40:0077`
+  - the remaining blocker is therefore narrower still:
+    - Apollo still does not make that pending request self-dispatch all the way to natural `SUPDXCHZ` / `SUPDXCHZ +1` before routed-step exhaustion
+    - the final forced handoff still decides when to inject the exact captured request into `SUPDXCHZ`
+    - the post-`SUPDXCHZ` completion budget still remains when exact `ENDPRCHG`, `TASKOVER`, or `INTRSM` are not reached
+- What runtime consequence is now more Apollo-driven:
+  - the routed trace no longer misidentifies the pending request as bank `30`
+  - the remaining post-capture observer now reports the same effective target bank Apollo encoded in `NEWLOC +1`
+  - after forced handoff, the routed trace now proves activation of the exact decoded post-`SUPDXCHZ` target:
+    - `40:0077`
+- What still remains fallback/custom:
+  - the final forced handoff still exists if Apollo still does not reach natural `SUPDXCHZ` / `SUPDXCHZ +1` transfer state before routed-step exhaustion
+  - the post-`SUPDXCHZ` completion budget still exists when exact `ENDPRCHG`, `TASKOVER`, or `INTRSM` are not reached
+  - the remaining emulator-side post-capture path still decides when to invoke `SUPDXCHZ`; it is now less custom because it no longer fabricates the effective target bank incorrectly
+  - local fallback command parsing and entry buffering still remain when Apollo display/input ownership is absent
+  - phase ownership, telemetry, and mission outcomes remain compatibility-owned
+
+## 2026-04-21 - post-`SUPDXCHZ` routed completion now runs through exact `CHARIN`/`ENDOFJOB`, and the old custom `CHARIN2` stop is gone
+
+- What the captured Apollo request words `02077 / 60101` mean in the routed path:
+  - `02077` is the exact `2CADR` S-register target word captured by `NOVAC / DXCH NEWLOC`
+  - `60101` is the exact `2CADR` bank/BBCON word
+  - exact `Parse2CADR.c` semantics still decode that bank word as:
+    - E-bank `1`
+    - fixed bank `030`
+    - superbank `4`
+  - so the effective switched-fixed routed request remains `40:0077`
+- What part of the post-capture path was still custom before this batch:
+  - after forced `SUPDXCHZ`, the routed path still stopped early on a native `CHARIN2` shortcut instead of letting Apollo continue to its own exit boundary
+  - the bank-40 pre-entry stub at `40:2077` was also still unlabeled in the runtime, so the exact post-`SUPDXCHZ` aftermath was only partially visible
+- What part of that path was reduced or removed in this batch:
+  - removed the custom post-dispatch `CHARIN2` stop from `continueAfterExecutiveDispatch`
+  - added exact runtime labels for:
+    - `CHARIN_PREENTRY` at `40:2077`
+    - `ENDOFJOB` at `02:3155`
+  - the routed post-`SUPDXCHZ` path is now runtime-proven to continue through:
+    - `CHARIN_PREENTRY`
+    - `CHARIN`
+    - `CHARIN2`
+    - `ENDOFJOB`
+  - and completion now stops on exact Apollo `ENDOFJOB` instead of the earlier local `CHARIN2` shortcut
+- Which exact Apollo labels in the final remaining transition segment are now exercised:
+  - the proven final transition slice remains:
+    - `JOBSLP1`
+    - `JOBSLP2`
+    - `NUCHANG2`
+    - `DUMMYJOB`
+    - `ADVAN`
+    - `NUDIRECT`
+  - new exact post-`SUPDXCHZ` aftermath labels now runtime-proven in this batch:
+    - `CHARIN_PREENTRY`
+    - `CHARIN`
+    - `CHARIN2`
+    - `ENDOFJOB`
+- What final forced handoff or completion budget was reduced or removed:
+  - the final forced handoff at routed-step exhaustion still remains
+  - the post-`SUPDXCHZ` completion fallback is reduced in this pass:
+    - exact `ENDOFJOB` is now another real Apollo-owned completion boundary on the routed key path
+    - the old custom `CHARIN2` stop is gone
+    - the remaining fallback post-target budget now applies only if exact `ENDPRCHG`, `TASKOVER`, `INTRSM`, or `ENDOFJOB` are not reached
+- What exact remaining semantic blocker still exists if fallback remains:
+  - the remaining blocker is still pre-transfer, not post-transfer:
+    - Apollo still does not make the captured request self-dispatch all the way to natural `SUPDXCHZ` / `SUPDXCHZ +1` before routed-step exhaustion
+    - the final forced handoff still decides when the exact `2CADR` request is injected into `SUPDXCHZ`
+  - the bank word, superbank state, post-`SUPDXCHZ` bank-40 entry stub, and Apollo completion to `ENDOFJOB` are now runtime-proven
+- What runtime consequence is now more Apollo-driven:
+  - after forced `SUPDXCHZ`, the routed path now continues through Apollo-owned bank-40 Pinball entry and returns via Apollo-owned `ENDOFJOB`
+  - the post-dispatch routed flow is now less emulator-truncated because it no longer stops at `CHARIN2`
+- What still remains fallback/custom:
+  - the final forced handoff still exists if Apollo still does not reach natural `SUPDXCHZ` / `SUPDXCHZ +1` transfer state before routed-step exhaustion
+  - the remaining post-`SUPDXCHZ` fallback budget still exists when exact `ENDPRCHG`, `TASKOVER`, `INTRSM`, or `ENDOFJOB` are not reached
+  - the remaining emulator-side post-capture path still decides when to invoke `SUPDXCHZ`
+  - local fallback command parsing and entry buffering still remain when Apollo display/input ownership is absent
+  - phase ownership, telemetry, and mission outcomes remain compatibility-owned
+
+## 2026-04-22 - the remaining forced handoff is now pinned to exact interpreter-space exhaustion, while post-`SUPDXCHZ` completion remains reduced by exact `ENDOFJOB`
+
+- What the captured Apollo request words `02077 / 60101` mean in the routed path:
+  - unchanged from the prior pass:
+    - `02077` is the exact `2CADR` S-register target word
+    - `60101` is the exact `2CADR` bank/BBCON word
+    - the exact effective routed target remains `40:0077`
+    - that target remains runtime-proven to enter the real bank-40 Pinball path and exit via exact `ENDOFJOB`
+- What part of the post-capture path was still custom before this batch:
+  - the remaining custom handoff still did not know precisely where Apollo was stalling before forced `SUPDXCHZ`
+  - that made the last blocker only broadly describable as “Apollo does not self-dispatch before exhaustion”
+- What part of that path was reduced or removed in this batch:
+  - no new fallback path was added
+  - the routed exhaustion trace now records the exact stall site and whether Apollo had reached:
+    - `RESUME`
+    - the proven final pre-transfer scheduler slice
+  - runtime proof now shows the remaining forced handoff fires from:
+    - `pc=03:0223`
+    - `resume=no`
+    - `finalSlice=no`
+  - that narrows the remaining custom post-capture dispatch debt to the interpreter-side aftermath between exact `NOVAC_NEWLOC` capture and later `RESUME` / scheduler ownership
+- Which exact Apollo labels in the final remaining transition segment are now exercised:
+  - no new final-slice label was honestly proven in this pass
+  - the previously proven final slice remains:
+    - `JOBSLP1`
+    - `JOBSLP2`
+    - `NUCHANG2`
+    - `DUMMYJOB`
+    - `ADVAN`
+    - `NUDIRECT`
+  - the exact post-`SUPDXCHZ` completion-side labels proven earlier in this batch remain:
+    - `CHARIN_PREENTRY`
+    - `CHARIN`
+    - `CHARIN2`
+    - `ENDOFJOB`
+- What final forced handoff or completion budget was reduced or removed:
+  - no further reduction of the final forced handoff in this pass
+  - no further reduction of the post-`SUPDXCHZ` fallback budget in this pass beyond the already-landed exact `ENDOFJOB` completion boundary
+- What exact remaining semantic blocker still exists if fallback remains:
+  - the remaining blocker is now exact and earlier than the scheduler slice:
+    - after exact `NOVAC_NEWLOC` request capture of `02077 / 60101`, Apollo runs into bank-03 interpreter aftermath and stalls at exact `03:0223`
+    - at the point forced handoff fires, runtime proof shows:
+      - `resume=no`
+      - `finalSlice=no`
+      - `newjob=77777`
+      - `loc=00000`
+      - `bankset=77777`
+      - `priority=00000`
+  - the remaining handoff is therefore not being blocked by the already-proven `JOBSLP1/JOBSLP2/NUCHANG2/DUMMYJOB/ADVAN/NUDIRECT` corridor
+  - it is being blocked earlier, in the still-unresolved interpreter-side aftermath between request capture and the later exact `RESUME` / scheduler-owned transfer path
+- What runtime consequence is now more Apollo-driven:
+  - the routed trace now proves both ends of the remaining gap:
+    - exact request capture at `NOVAC_NEWLOC`
+    - exact post-`SUPDXCHZ` Pinball entry through `CHARIN_PREENTRY` and completion at `ENDOFJOB`
+  - the last remaining custom handoff is now pinned to a precise Apollo PC/state rather than a generic routed-step timeout
+- What still remains fallback/custom:
+  - the final forced handoff still exists if Apollo still does not reach natural `SUPDXCHZ` / `SUPDXCHZ +1` transfer state before routed-step exhaustion
+  - the remaining post-`SUPDXCHZ` fallback budget still exists when exact `ENDOFJOB`, `ENDPRCHG`, `TASKOVER`, or `INTRSM` are not reached
+  - the remaining emulator-side post-capture path still decides when to invoke `SUPDXCHZ`
+  - the exact unresolved Apollo-owned replacement target is now the bank-03 interpreter-side aftermath leading from post-capture execution into `RESUME` / `INTRSM` / later scheduler transfer ownership
+  - local fallback command parsing and entry buffering still remain when Apollo display/input ownership is absent
+  - phase ownership, telemetry, and mission outcomes remain compatibility-owned
+
+## 2026-04-22 - routed completion now uses only exact Apollo completion boundaries, while the final forced handoff remains pinned to bank-03 interpreter aftermath
+
+- What the captured Apollo request words `02077 / 60101` mean in the routed path:
+  - unchanged:
+    - `02077` is the captured `2CADR` target-address word
+    - `60101` is the captured bank/BBCON word
+    - the exact effective routed target remains `40:0077`
+    - after transfer, that request remains runtime-proven through `CHARIN_PREENTRY -> CHARIN -> CHARIN2 -> ENDOFJOB`
+- What part of the post-capture path was still custom before this batch:
+  - the outer routed-input path and the final-transition continuation still had hard-coded `CHARIN2` success exits even though the exact Apollo completion boundary set had already been proven deeper at `ENDOFJOB`, `ENDPRCHG`, `TASKOVER`, and `INTRSM`
+- What part of that path was reduced or removed in this batch:
+  - removed those remaining `CHARIN2` completion exits
+  - routed completion now stops only on exact Apollo completion boundaries:
+    - `ENDOFJOB`
+    - `ENDPRCHG`
+    - `TASKOVER`
+    - `INTRSM`
+  - no new fallback branch was added
+- Which exact Apollo labels in the final remaining transition segment are now exercised:
+  - no new final pre-transfer label was honestly proven in this pass
+  - the previously proven final slice remains:
+    - `JOBSLP1`
+    - `JOBSLP2`
+    - `NUCHANG2`
+    - `DUMMYJOB`
+    - `ADVAN`
+    - `NUDIRECT`
+  - the exact post-`SUPDXCHZ` completion-side labels remain:
+    - `CHARIN_PREENTRY`
+    - `CHARIN`
+    - `CHARIN2`
+    - `ENDOFJOB`
+- What final forced handoff or completion budget was reduced or removed:
+  - no honest reduction of the final forced handoff in this pass
+  - the remaining completion-side custom stop was reduced:
+    - routed completion is no longer allowed to terminate early on local `CHARIN2`
+    - it now requires one of the exact Apollo completion boundaries above
+- What exact remaining semantic blocker still exists if fallback remains:
+  - the remaining blocker is still exact and pre-transfer:
+    - routed-step exhaustion still fires from `pc=03:0223`
+    - `resume=no`
+    - `finalSlice=no`
+    - `newjob=77777`
+    - `loc=00000`
+    - `bankset=77777`
+    - `priority=00000`
+  - that keeps the blocker pinned to bank-03 interpreter aftermath before the later exact `RESUME` / scheduler-owned corridor, not to the already-proven `JOBSLP1/JOBSLP2/NUCHANG2/DUMMYJOB/ADVAN/NUDIRECT` slice
+- What runtime consequence is now more Apollo-driven:
+  - both post-dispatch continuation and routed-input completion now honor only exact Apollo completion boundaries rather than a leftover local `CHARIN2` exit
+  - the remaining custom handoff is therefore more cleanly isolated to the pre-transfer bank-03 interpreter aftermath
+- What still remains fallback/custom:
+  - the final forced handoff still exists if Apollo still does not reach natural `SUPDXCHZ` / `SUPDXCHZ +1` transfer state before routed-step exhaustion
+  - the remaining post-`SUPDXCHZ` fallback budget still exists when exact `ENDOFJOB`, `ENDPRCHG`, `TASKOVER`, or `INTRSM` are not reached
+  - the remaining emulator-side post-capture path still decides when to invoke `SUPDXCHZ`
+  - the exact unresolved Apollo-owned replacement target remains the bank-03 interpreter aftermath leading from post-capture execution into `RESUME` / `INTRSM` / later scheduler transfer ownership
+  - local fallback command parsing and entry buffering still remain when Apollo display/input ownership is absent
+  - phase ownership, telemetry, and mission outcomes remain compatibility-owned
+
 ## Preserved earlier gains
 
 - native CPU rope-label execution tracking

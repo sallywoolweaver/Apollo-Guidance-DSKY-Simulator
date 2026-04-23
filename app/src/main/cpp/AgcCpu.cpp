@@ -22,6 +22,8 @@ constexpr uint16_t kRegZERO = 07;
 constexpr uint16_t kRegBRUPT = 017;
 constexpr uint16_t kReg16Limit = 03;
 constexpr uint16_t kResumeInstructionWord = 050017;
+constexpr uint16_t kPositiveOne = 000001;
+constexpr uint16_t kNegativeOne = 077776;
 
 uint16_t maskWord(uint32_t value) {
     return static_cast<uint16_t>(value & kWordMask);
@@ -33,6 +35,24 @@ uint16_t addOnesComplement(uint16_t lhs, uint16_t rhs) {
         sum = (sum & kWordMask) + 1U;
     }
     return static_cast<uint16_t>(sum & kWordMask);
+}
+
+int32_t signExtendWord(uint16_t value) {
+    const int32_t word = static_cast<int32_t>(value & kWordMask);
+    return (word | ((word << 1) & 0100000));
+}
+
+int32_t addSignExtendedWords(int32_t lhs, int32_t rhs) {
+    int32_t sum = lhs + rhs;
+    if ((sum & 0200000) != 0) {
+        sum += 1;
+        sum &= 0177777;
+    }
+    return sum;
+}
+
+uint16_t overflowCorrectWord(int32_t value) {
+    return static_cast<uint16_t>(((value & 037777) | ((value >> 1) & 040000)) & kWordMask);
 }
 
 uint16_t negateOnesComplement(uint16_t value) {
@@ -55,6 +75,7 @@ void AgcCpu::initialize() {
     state_.interruptsEnabled = true;
     state_.outputChannel7 = 0;
     state_.extendFlag = false;
+    state_.preserveExtendForNextInstruction = false;
     state_.programCounterInErasable = false;
     state_.initialized = true;
 }
@@ -69,6 +90,7 @@ void AgcCpu::loadProgramContext(const AgcProgramImage& image, const std::string&
     state_.programCounterOffset = image.firstRopeOffset;
     state_.executionNote = "Program image loaded";
     state_.programCounterInErasable = false;
+    state_.preserveExtendForNextInstruction = false;
 }
 
 void AgcCpu::resetForScenario(const AgcProgramImage& image, const std::string& requestedProgram) {
@@ -93,6 +115,7 @@ void AgcCpu::resetForScenario(const AgcProgramImage& image, const std::string& r
     state_.interruptsEnabled = true;
     state_.outputChannel7 = 0;
     state_.extendFlag = false;
+    state_.preserveExtendForNextInstruction = false;
     state_.programCounterBank = image.firstRopeBank;
     state_.programCounterOffset = image.firstRopeOffset;
     state_.lastFetchedWord = 0;
@@ -128,6 +151,15 @@ void AgcCpu::setSwitchedFixedBank(uint16_t bank) {
     }
     state_.fbRegister = static_cast<uint16_t>((bank & 037) << 10);
     syncBankRegisters();
+}
+
+void AgcCpu::clearInterruptTransientState() {
+    if (!state_.initialized) {
+        initialize();
+    }
+    state_.indexRegister = 0;
+    state_.extendFlag = false;
+    state_.preserveExtendForNextInstruction = false;
 }
 
 void AgcCpu::setAccumulator(uint16_t word) {
@@ -232,7 +264,9 @@ uint16_t AgcCpu::applyIndexToInstruction(uint16_t word) {
     if (state_.indexRegister == 0) {
         return word;
     }
-    const uint16_t indexed = maskWord(static_cast<uint32_t>(word) + static_cast<uint32_t>(state_.indexRegister));
+    const uint16_t indexed = overflowCorrectWord(
+        addSignExtendedWords(signExtendWord(word), signExtendWord(state_.indexRegister))
+    );
     state_.indexRegister = 0;
     return indexed;
 }
@@ -252,7 +286,7 @@ uint16_t AgcCpu::readOperand12(uint16_t address12, const AgcMemoryImage& memoryI
             case kRegFB:
                 return state_.fbRegister;
             case kRegZ:
-                return static_cast<uint16_t>(state_.programCounterOffset & kAddressMask12);
+                return currentProgramCounterAddress();
             case kRegBB:
                 return state_.bbRegister;
             default:
@@ -386,6 +420,23 @@ void AgcCpu::setProgramCounterFromAddress(uint16_t address12) {
     state_.programCounterInErasable = false;
 }
 
+uint16_t AgcCpu::currentProgramCounterAddress() const {
+    if (state_.programCounterInErasable) {
+        return static_cast<uint16_t>(state_.programCounterOffset & kAddressMask12);
+    }
+    if (state_.programCounterBank == 02) {
+        return static_cast<uint16_t>(04000 | (state_.programCounterOffset & 01777));
+    }
+    if (state_.programCounterBank == 03) {
+        return static_cast<uint16_t>(06000 | (state_.programCounterOffset & 01777));
+    }
+    return static_cast<uint16_t>(02000 | (state_.programCounterOffset & 01777));
+}
+
+uint16_t AgcCpu::incrementAddress12(uint16_t address12) const {
+    return static_cast<uint16_t>((address12 + 1) & kAddressMask12);
+}
+
 void AgcCpu::syncBankRegisters() {
     if ((state_.bbRegister & 076007) != ((state_.fbRegister & 076000) | ((state_.ebRegister & 03400) >> 8))) {
         if (state_.bbRegister != 0) {
@@ -426,12 +477,12 @@ uint16_t AgcCpu::readOperandPairHigh(uint16_t address10, const AgcMemoryImage& m
 }
 
 uint16_t AgcCpu::readOperandPairLow(uint16_t address10, const AgcMemoryImage& memoryImage) const {
-    return readOperand10(static_cast<uint16_t>((address10 + 1) & kAddressMask10), memoryImage);
+    return readOperand10(static_cast<uint16_t>((address10 - 1) & kAddressMask10), memoryImage);
 }
 
 void AgcCpu::writeOperandPair(uint16_t address10, uint16_t highWord, uint16_t lowWord, AgcMemoryImage& memoryImage) {
     writeOperand10(address10, highWord, memoryImage);
-    writeOperand10(static_cast<uint16_t>((address10 + 1) & kAddressMask10), lowWord, memoryImage);
+    writeOperand10(static_cast<uint16_t>((address10 - 1) & kAddressMask10), lowWord, memoryImage);
 }
 
 void AgcCpu::advanceProgramCounter() {
@@ -463,7 +514,9 @@ void AgcCpu::executeFetchedWord(uint16_t word, AgcMemoryImage& memoryImage) {
     const uint16_t address12 = word & kAddressMask12;
     const uint16_t address10 = word & kAddressMask10;
     const uint16_t address9 = word & 0777;
-    if (state_.extendFlag) {
+    const bool hadExtendFlag = state_.extendFlag;
+    state_.preserveExtendForNextInstruction = false;
+    if (hadExtendFlag) {
         extendedOpcode = static_cast<uint16_t>(extendedOpcode | 0100);
         state_.extendFlag = false;
     }
@@ -491,18 +544,12 @@ void AgcCpu::executeFetchedWord(uint16_t word, AgcMemoryImage& memoryImage) {
                 state_.supportedOpcodeSkeletonCount++;
                 state_.executionNote = "EXTEND";
             } else if (address12 == kRegQ) {
-                if ((state_.qRegister & kAddressMask12) < 02000) {
-                    state_.programCounterBank = fixedBankForAddress(state_.qRegister);
-                    state_.programCounterOffset = state_.qRegister & 01777;
-                    state_.programCounterInErasable = false;
-                } else {
-                    setProgramCounterFromAddress(state_.qRegister);
-                }
+                setProgramCounterFromAddress(state_.qRegister);
                 branchTaken_ = true;
                 state_.supportedOpcodeSkeletonCount++;
                 state_.executionNote = "TC Q";
             } else {
-                state_.qRegister = static_cast<uint16_t>((state_.programCounterOffset + 1) & kAddressMask12);
+                state_.qRegister = incrementAddress12(currentProgramCounterAddress());
                 setProgramCounterFromAddress(address12);
                 branchTaken_ = true;
                 state_.supportedOpcodeSkeletonCount++;
@@ -616,9 +663,9 @@ void AgcCpu::executeFetchedWord(uint16_t word, AgcMemoryImage& memoryImage) {
         case 053: {
             const uint16_t highOperand = readOperandPairHigh(address10, memoryImage);
             const uint16_t lowOperand = readOperandPairLow(address10, memoryImage);
-            writeOperandPair(address10, state_.accumulator, state_.lRegister, memoryImage);
-            state_.accumulator = highOperand;
-            state_.lRegister = lowOperand;
+            writeOperandPair(address10, state_.lRegister, state_.accumulator, memoryImage);
+            state_.lRegister = highOperand;
+            state_.accumulator = lowOperand;
             if (address10 == kRegZ || address10 == kRegFB) {
                 branchTaken_ = true;
             }
@@ -741,6 +788,23 @@ void AgcCpu::executeFetchedWord(uint16_t word, AgcMemoryImage& memoryImage) {
             state_.executionNote = "QXCH " + std::to_string(address10);
             break;
         }
+        case 0124:
+        case 0125: {
+            const uint16_t operand = readOperand10(address10, memoryImage);
+            const uint16_t increment = ((signExtendWord(operand) & 0100000) == 0)
+                ? kPositiveOne
+                : kNegativeOne;
+            const uint16_t result = maskWord(addSignExtendedWords(
+                signExtendWord(increment),
+                signExtendWord(operand)
+            ));
+            if (address10 != kRegZERO) {
+                writeOperand10(address10, result, memoryImage);
+            }
+            state_.supportedOpcodeSkeletonCount++;
+            state_.executionNote = "AUG " + std::to_string(address10);
+            break;
+        }
         case 0130:
         case 0131:
         case 0132:
@@ -749,10 +813,31 @@ void AgcCpu::executeFetchedWord(uint16_t word, AgcMemoryImage& memoryImage) {
         case 0135:
         case 0136:
         case 0137: {
-            state_.accumulator = readOperandPairHigh(address10, memoryImage);
-            state_.lRegister = readOperandPairLow(address10, memoryImage);
+            state_.lRegister = readOperand12(address12, memoryImage);
+            state_.accumulator = readOperand12(static_cast<uint16_t>((address12 - 1) & kAddressMask12), memoryImage);
             state_.supportedOpcodeSkeletonCount++;
-            state_.executionNote = "DCA " + std::to_string(address10);
+            state_.executionNote = "DCA " + std::to_string(address12);
+            break;
+        }
+        case 0140:
+        case 0141:
+        case 0142:
+        case 0143:
+        case 0144:
+        case 0145:
+        case 0146:
+        case 0147: {
+            if (address12 == kRegL) {
+                state_.accumulator = maskWord(~state_.accumulator);
+                state_.lRegister = overflowCorrectWord(signExtendWord(static_cast<uint16_t>(~state_.lRegister & kWordMask)));
+            } else {
+                const uint16_t highOperand = readOperand12(address12, memoryImage);
+                const uint16_t lowOperand = readOperand12(static_cast<uint16_t>((address12 - 1) & kAddressMask12), memoryImage);
+                state_.lRegister = overflowCorrectWord(signExtendWord(static_cast<uint16_t>(~highOperand & kWordMask)));
+                state_.accumulator = maskWord(~lowOperand);
+            }
+            state_.supportedOpcodeSkeletonCount++;
+            state_.executionNote = "DCS " + std::to_string(address12);
             break;
         }
         case 0150:
@@ -764,6 +849,9 @@ void AgcCpu::executeFetchedWord(uint16_t word, AgcMemoryImage& memoryImage) {
         case 0156:
         case 0157:
             state_.indexRegister = readOperand12(address12, memoryImage);
+            if (hadExtendFlag) {
+                state_.preserveExtendForNextInstruction = true;
+            }
             state_.supportedOpcodeSkeletonCount++;
             state_.executionNote = "INDEX* " + std::to_string(address12);
             break;
@@ -793,6 +881,10 @@ void AgcCpu::executeFetchedWord(uint16_t word, AgcMemoryImage& memoryImage) {
             state_.unsupportedOpcodeCount++;
             state_.executionNote = "UNSUPPORTED " + std::to_string(extendedOpcode);
             break;
+    }
+
+    if (state_.preserveExtendForNextInstruction) {
+        state_.extendFlag = true;
     }
 }
 

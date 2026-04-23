@@ -16,6 +16,7 @@ class AgcCpu {
     void requestMajorMode(int majorMode);
     void jumpToBankOffset(uint16_t bank, uint16_t offset);
     void setSwitchedFixedBank(uint16_t bank);
+    void clearInterruptTransientState();
     void setAccumulator(uint16_t word);
     void setLRegister(uint16_t word);
     void setInputChannel(uint16_t channel, uint16_t word);
@@ -36,6 +37,8 @@ class AgcCpu {
     uint16_t readChannel(uint16_t channel) const;
     void writeChannel(uint16_t channel, uint16_t word);
     void setProgramCounterFromAddress(uint16_t address12);
+    uint16_t currentProgramCounterAddress() const;
+    uint16_t incrementAddress12(uint16_t address12) const;
     void syncBankRegisters();
     uint16_t fixedBankForAddress(uint16_t address12) const;
     uint16_t readFixedWord(uint16_t address12, const AgcMemoryImage& memoryImage) const;

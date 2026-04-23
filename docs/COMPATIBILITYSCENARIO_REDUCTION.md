@@ -89,6 +89,7 @@
   - `NUDIRECT`
   before the older bounded post-`RESUME` timer is allowed to fire
 - post-`SUPDXCHZ` completion can now stop on exact deeper Apollo aftermath labels:
+  - `ENDOFJOB`
   - `ENDPRCHG`
   - `INTRSM`
   before the older post-target instruction budget is allowed to fire
@@ -110,6 +111,15 @@
   the runtime now gives that exact Apollo slice one more continuation window to reach natural `SUPDXCHZ` / `SUPDXCHZ +1` transfer state before the remaining forced handoff is allowed
 - post-`SUPDXCHZ` completion can now also stop on exact `TASKOVER` before the fallback post-target budget is allowed to fire
 - the custom erasable initializer now includes the exact Apollo fresh-start `SELFRET` word used by the `ADVAN -> SELFBANK -> SUPDXCHZ +1` idle/self-check dispatch path
+- the routed key path now captures the real Apollo `2CADR CHARIN` request words at exact `NOVAC / DXCH NEWLOC` instead of a zeroed request, because the native CPU now:
+  - clears stale routed interrupt `INDEX` / `EXTEND` state
+  - preserves `EXTEND INDEX` into the following instruction
+  - carries full Apollo-style `Z` / `Q` return addresses
+  - uses Apollo-correct `DCA` / `DXCH` pair ordering on that path
+- the routed post-capture aftermath now executes through the previously blocking Apollo opcode classes:
+  - extended `DCS`
+  - extended `AUG`
+  instead of stopping on unsupported-opcode traps at the exact routed sites previously proven in bank `03`
 
 ## Next candidate to remove
 
@@ -177,3 +187,33 @@ Reason:
   - Why it exists: descent physics, mission time, telemetry source values, and outcomes are still not owned by real Apollo execution in the current runtime
   - Apollo-owned replacement target: broader Apollo-owned runtime execution and peripheral/state ownership, with compatibility logic reduced to bootstrap only
   - Reduced this batch: no
+
+- Path: routed `NOVAC` request capture semantics
+  - Why it existed: the routed path had been capturing a zero request because the emulator was mis-handling pending `EXTEND` / `INDEX`, indexed instruction formation, `Q` return addresses, and `DCA` / `DXCH` pair ordering
+  - Apollo-owned replacement target: exact Apollo `INDEX Q / DCA 0 / DXCH NEWLOC` capture of the caller's `2CADR`
+  - Reduced this batch: yes; the routed key path now captures the real `2CADR CHARIN` words `02077 / 60101` from the exact callsite instead of a zero request
+
+- Path: routed post-capture opcode coverage
+  - Why it exists: after exact `NOVAC` request capture, the emulator still lacks enough Apollo opcode coverage for the routed aftermath to continue to natural transfer on its own
+  - Apollo-owned replacement target: exact support for the now-proven blocking opcode classes encountered after request capture, currently `0140` and `0124` on the routed path, plus the next exact opcode exposed after those are fixed
+  - Reduced this batch: yes; the exact blocking opcode classes `0140` (`DCS`) and `0124` (`AUG`) are now supported, so this is no longer the active blocker on the routed path
+
+- Path: forced-dispatch `2CADR` decode / target consumption
+  - Why it exists: the routed path now captures exact Apollo `2CADR` words, but the remaining emulator-side forced-dispatch path still does not consume those words with full Apollo-owned semantics
+  - Apollo-owned replacement target: Apollo-owned scheduler/job-switch aftermath that naturally reaches `SUPDXCHZ` / `SUPDXCHZ +1`, or at minimum an exact `2CADR` decode/dispatch path that honors bank and superbank semantics of the captured request words
+  - Reduced this batch: yes; the remaining observer/target-consumer now decodes the captured `NEWLOC +1` bank word with exact `2CADR` superbank semantics, so the routed trace now proves the effective target as `40:0077` instead of the earlier custom-misdecoded `30:0077`
+
+- Path: custom post-`SUPDXCHZ` `CHARIN2` stop
+  - Why it existed: after the forced `SUPDXCHZ` handoff, the routed key path was still stopping on a local `CHARIN2` shortcut rather than allowing the Apollo Pinball path to run to its own exit boundary
+  - Apollo-owned replacement target: exact bank-40 Pinball aftermath through `CHARIN_PREENTRY` / `CHARIN` / `CHARIN2` and then exact Executive `ENDOFJOB`
+  - Reduced this batch: yes; the local `CHARIN2` stop is gone, and the routed trace now proves Apollo-owned completion at exact `ENDOFJOB`
+
+- Path: routed-input `CHARIN2` completion exit
+  - Why it existed: even after the post-`SUPDXCHZ` path was allowed to run through exact `ENDOFJOB`, the outer routed-input/final-transition flow still treated `CHARIN2` itself as a success boundary
+  - Apollo-owned replacement target: exact Apollo completion boundaries only, namely `ENDOFJOB`, `ENDPRCHG`, `TASKOVER`, and `INTRSM`
+  - Reduced this batch: yes; the remaining hard-coded `CHARIN2` completion exits are gone, so routed completion now stops only on those exact Apollo boundaries
+
+- Path: pre-transfer routed handoff trigger after exact `NOVAC` request capture
+  - Why it exists: Apollo still does not carry the pending request all the way to natural `SUPDXCHZ` / `SUPDXCHZ +1` before routed-step exhaustion
+  - Apollo-owned replacement target: exact bank-03 interpreter aftermath that leads from post-capture execution into `RESUME` / `INTRSM` and then the later proven scheduler/transfer corridor
+  - Reduced this batch: no; the blocker is now documented more precisely as exact exhaustion at `03:0223` with `resume=no` and `finalSlice=no`

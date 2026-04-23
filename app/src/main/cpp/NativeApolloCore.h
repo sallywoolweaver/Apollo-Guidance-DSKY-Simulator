@@ -39,6 +39,8 @@ class NativeApolloCore {
         bool active = false;
         uint16_t targetAddress = 0;
         uint16_t bankWord = 0;
+        uint16_t targetEbank = 0;
+        uint16_t targetSuperbank = 0;
         uint16_t targetBank = 0;
         uint16_t targetOffset = 0;
         std::string requestSiteLabel;
@@ -58,6 +60,9 @@ class NativeApolloCore {
     bool continueFinalTransitionToNaturalTransfer(int maxInstructions);
     static int normalizeFixedAddressForBank(int bank, uint16_t address12);
     static uint16_t fixedAddressForBankOffset(int bank, int offset);
+    static uint16_t decode2CadrEbank(uint16_t bankWord);
+    static uint16_t decode2CadrSuperbank(uint16_t bankWord);
+    static uint16_t decode2CadrFixedBank(uint16_t targetAddress, uint16_t bankWord);
     void primeApolloKeyruptLeadInState();
     bool hasApolloDskyEntryPoints() const;
     bool routeApolloDskyInput(const std::string& key);

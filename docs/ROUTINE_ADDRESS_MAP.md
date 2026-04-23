@@ -59,6 +59,7 @@ Those files are derived debugging artifacts, not Apollo artifacts.
 - `ADVAN` -> bank `01`, offset `3214`, source `EXECUTIVE.agc`, section `ADVAN`
 - `SELFBANK` -> bank `01`, offset `3224`, source `EXECUTIVE.agc`, section `SELFBANK`
 - `NUDIRECT` -> bank `01`, offset `3225`, source `EXECUTIVE.agc`, section `NUDIRECT`
+- `ENDOFJOB` -> bank `02`, offset `3155`, source `EXECUTIVE.agc`, section `ENDOFJOB`
 - `SUPDXCHZ` -> bank `02`, offset `3165`, source `EXECUTIVE.agc`, section `SUPDXCHZ`
 - `TASKOVER` -> bank `02`, offset `3261`, source `WAITLIST.agc`, section `TASKOVER`
 - `INTRSM` -> bank `03`, offset `2050`, source `INTERPRETER.agc`, section `INTRSM`
@@ -70,6 +71,7 @@ Those files are derived debugging artifacts, not Apollo artifacts.
 - `ELRCODE` -> bank `04`, offset `3377`, source `KEYRUPT,_UPRUPT.agc`, section `ELRCODE`
 - `CHARIN` -> bank `40`, offset `2100`, source `PINBALL_GAME__BUTTONS_AND_LIGHTS.agc`, section `CHARIN`
 - `CHARIN2` -> bank `40`, offset `2112`, source `PINBALL_GAME__BUTTONS_AND_LIGHTS.agc`, section `CHARIN2`
+- `CHARIN_PREENTRY` -> bank `40`, offset `2077`, source `PINBALL_GAME__BUTTONS_AND_LIGHTS.agc`, section `immediate pre-CHARIN bank-40 entry stub`
 - `ENTERJMP` -> bank `40`, offset `2157`, source `PINBALL_GAME__BUTTONS_AND_LIGHTS.agc`, section `ENTERJMP`
 - `89TEST` -> bank `40`, offset `2161`, source `PINBALL_GAME__BUTTONS_AND_LIGHTS.agc`, section `89TEST`
 - `NUM` -> bank `40`, offset `2175`, source `PINBALL_GAME__BUTTONS_AND_LIGHTS.agc`, section `NUM`
@@ -118,6 +120,7 @@ Those files are derived debugging artifacts, not Apollo artifacts.
       the runtime now gives that exact Apollo slice one last continuation window to reach natural `SUPDXCHZ` / `SUPDXCHZ +1` transfer state before any forced late dispatch is allowed
     - if the requested job still has not become self-dispatching after the extended post-`RESUME` Apollo execution window, the remaining fallback now loads the Apollo-captured `NEWLOC` / `NEWLOC+1` `2CADR` request state into `A+L` and enters exact `SUPDXCHZ` instead of jumping directly to a decoded target label
     - after `SUPDXCHZ`, post-dispatch completion can now stop on exact Executive/Interpreter aftermath labels:
+      - `ENDOFJOB`
       - `ENDPRCHG`
       - `TASKOVER`
       - `INTRSM`
@@ -143,6 +146,31 @@ Those files are derived debugging artifacts, not Apollo artifacts.
 - The active key-input path now exercises more of Apollo's interrupt-return preparation before the remaining dispatch.
 - The active key-input path now uses more honest interrupt lead-in storage and a real Apollo `RESUME` instruction before the remaining fallback can occur.
 - The remaining late dispatch is now sourced from Apollo-captured `2CADR` request words and handed to exact Apollo `SUPDXCHZ` rather than to a single hard-coded `CHARIN` target.
+- The routed `NOVAC` request capture is now runtime-proven to pull the real `2CADR CHARIN` words from the exact caller site:
+  - `04:3311` -> `02077`
+  - `04:3312` -> `60101`
+  using Apollo-correct `INDEX Q / DCA 0 / DXCH NEWLOC` semantics rather than a zeroed emulator substitute.
+- Those captured words now have an exact Apollo-owned decode path in the runtime:
+  - `02077` is the captured `2CADR` S-register target word
+  - `60101` is the captured bank/BBCON word
+  - per exact `Parse2CADR.c` semantics, `60101` carries:
+    - E-bank `1`
+    - fixed bank `030`
+    - superbank `4`
+  - so the effective switched-fixed request is `40:0077`
+- The remaining post-capture observer no longer flattens that request to bank `30`; routed tracing now proves the exact post-`SUPDXCHZ` target activation at `40:0077`.
+- The exact routed post-`SUPDXCHZ` aftermath is now runtime-proven to continue through the real bank-40 Pinball path:
+  - `CHARIN_PREENTRY` at `40:2077`
+  - `CHARIN` at `40:2100`
+  - `CHARIN2` at `40:2112`
+  - `ENDOFJOB` at `02:3155`
+  rather than stopping at the old custom `CHARIN2` shortcut.
+- The routed outer completion path now also uses only exact Apollo completion boundaries:
+  - `ENDOFJOB`
+  - `ENDPRCHG`
+  - `TASKOVER`
+  - `INTRSM`
+  and no longer treats `CHARIN2` itself as a completion boundary.
 - The remaining routed-step exhaustion fallback is now narrower because exact Apollo state in the final pre-transfer transition slice gets its own continuation path to natural transfer before any forced handoff is allowed.
 - The current Luminary 099 erasable initializer now also carries the exact Apollo fresh-start `SELFRET` word needed by the `ADVAN -> SELFBANK -> SUPDXCHZ +1` idle/self-check dispatch path.
 - The native CPU now uses one’s-complement end-around-carry arithmetic for `AD`, `ADS`, and `SU`, which is directly relevant to the routed Executive state transitions that decide whether Apollo marks `NEWJOB` and reaches the natural transfer corridor on its own.
@@ -167,6 +195,24 @@ Those files are derived debugging artifacts, not Apollo artifacts.
 - The current remaining invocation trigger is smaller than before because it now waits for exact natural `SUPDXCHZ` / `SUPDXCHZ +1` transfer state instead of dispatching at the earlier scheduler labels, and the old separate post-`RESUME` invocation timer is gone, but it is still not full Apollo job scheduling and interrupt return.
 - The current remaining invocation trigger is still not gone, because the pending request is not yet proven to become self-dispatching purely from Apollo-owned scheduler state even after the arithmetic correction in this pass.
 - The current remaining invocation trigger is also not yet proven gone after the executable-erasable fetch correction in this pass; no new runtime label proof is claimed yet from that semantic fix alone.
+- The current remaining invocation trigger is now pinned more narrowly to exact bank-03 interpreter aftermath:
+  - routed-step exhaustion fires from `03:0223`
+  - `resume=no`
+  - `finalSlice=no`
+  - `newjob=77777`
+  - `loc=00000`
+  - `bankset=77777`
+  - `priority=00000`
+  so the active blocker is earlier than the later proven `RESUME` / scheduler / natural-transfer corridor.
+- The routed path still does not reach natural transfer on its own after that now-correct `2CADR` capture, because runtime tracing now shows exact unsupported opcode classes after the capture:
+  - `0140`
+  - `0124`
+  these are now the narrowest proven post-capture semantic blockers ahead of natural `SUPDXCHZ` / `SUPDXCHZ +1`.
+- Those exact post-capture opcode blockers are now supported:
+  - `0140` -> extended `DCS`
+  - `0124` -> extended `AUG`
+  and the routed trace no longer reports those unsupported sites.
+- The remaining forced-dispatch decoder is still custom and not yet a full Apollo-owned `2CADR` consumer, even though the captured `2CADR` words themselves are now Apollo-correct and their superbank-bearing bank word is now decoded exactly in the remaining observer/target-consumer.
 - A stronger local alignment check now exists in:
   - `third_party/_derived_tools/luminary099_executive_alignment_check.txt`
   - it confirms exact:

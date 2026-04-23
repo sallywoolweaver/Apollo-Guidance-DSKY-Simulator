@@ -57,6 +57,7 @@ class NativeApolloCore {
     bool dispatchPendingExecutiveRequest();
     bool armPendingExecutiveRequestAtCurrentTransferState(bool atSupdxchzPlusOne);
     bool continueAfterExecutiveDispatch(int maxInstructions);
+    bool continueInterpreterStallToNaturalTransfer(int maxInstructions);
     bool continueFinalTransitionToNaturalTransfer(int maxInstructions);
     static int normalizeFixedAddressForBank(int bank, uint16_t address12);
     static uint16_t fixedAddressForBankOffset(int bank, int offset);

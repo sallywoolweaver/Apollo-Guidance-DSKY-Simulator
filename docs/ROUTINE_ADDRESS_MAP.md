@@ -204,6 +204,28 @@ Those files are derived debugging artifacts, not Apollo artifacts.
   - `bankset=77777`
   - `priority=00000`
   so the active blocker is earlier than the later proven `RESUME` / scheduler / natural-transfer corridor.
+- The current routed trace now proves that this visible `03:0223` stall is actually executable erasable state:
+  - the remaining exact-stall detector only matches when `programCounterInErasable=yes`
+  - erasable address `0223` is currently seeded in `erasable_init.cfg` as `00223`
+  - that word is the seeded `VAC1ADRC` self-pointer from the custom fresh-start Executive availability chain
+- The routed trace now also proves the exact lead-in to that later `0223` stop:
+  - bank-03 rope aftermath executes through:
+    - `03:1032`
+    - `03:1033`
+    - `03:1034`
+    - `03:1004`
+    - `03:0061`
+    - `03:0062`
+    - `03:0063`
+    - `03:0065`
+    - `03:0071`
+    - `03:0072`
+    - `03:0074`
+  - that bank-03 path then executes a real `TC 0177`
+  - execution enters executable erasable at `0177` and linearly walks erasable words until the later exact `0223` loop
+- The remaining handoff trigger is now narrower than plain routed-step exhaustion:
+  - when Apollo reaches that exact executable-erasable `0223` stall state, the runtime now gives it one exact continuation window first
+  - only if that exact-stall continuation still does not reach `RESUME`, the final slice, or natural transfer does the remaining handoff occur
 - The routed path still does not reach natural transfer on its own after that now-correct `2CADR` capture, because runtime tracing now shows exact unsupported opcode classes after the capture:
   - `0140`
   - `0124`
@@ -213,6 +235,13 @@ Those files are derived debugging artifacts, not Apollo artifacts.
   - `0124` -> extended `AUG`
   and the routed trace no longer reports those unsupported sites.
 - The remaining forced-dispatch decoder is still custom and not yet a full Apollo-owned `2CADR` consumer, even though the captured `2CADR` words themselves are now Apollo-correct and their superbank-bearing bank word is now decoded exactly in the remaining observer/target-consumer.
+- The active pre-transfer blocker is now more precise than before:
+  - later exact tracing now narrows that further:
+    - the routed path first drops through a real bank-03 `TC 0177`
+    - then enters executable erasable core-set state at `0177`
+    - the later `0223` self-loop is downstream of that earlier core-set drop
+  - the unresolved gap is not generic “more Executive work”
+  - it is the exact executable-erasable `VAC1ADRC` stall path and the Apollo-owned return/transfer behavior or erasable state that should keep that path moving toward `RESUME` / `SUPDXCHZ`
 - A stronger local alignment check now exists in:
   - `third_party/_derived_tools/luminary099_executive_alignment_check.txt`
   - it confirms exact:

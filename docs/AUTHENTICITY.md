@@ -56,7 +56,29 @@
   - the remaining post-capture request observer/target-consumer now decodes captured `2CADR` bank words with exact Apollo `Parse2CADR` superbank semantics rather than flattening them to `(bankWord >> 10) & 037`; routed tracing now proves the captured `02077 / 60101` request as effective target `40:0077`
   - the routed post-`SUPDXCHZ` key path no longer stops on a local `CHARIN2` shortcut; it now continues through exact Apollo-owned `CHARIN_PREENTRY` / `CHARIN` / `CHARIN2` and exits on exact `ENDOFJOB`
   - the routed outer completion path now also honors only exact Apollo completion boundaries (`ENDOFJOB`, `ENDPRCHG`, `TASKOVER`, `INTRSM`) and no longer treats `CHARIN2` itself as a completion stop
-  - the remaining forced handoff is now pinned to exact pre-transfer bank-03 interpreter aftermath at `03:0223` with `resume=no` and `finalSlice=no`, so the current unresolved ownership gap is earlier interpreter-state progression rather than the already-proven later `RESUME` / scheduler / `SUPDXCHZ` corridor
+  - the remaining forced handoff is now pinned more precisely than bank-03 interpreter aftermath alone:
+    - the visible stall still presents as `03:0223`
+    - but the routed trace now proves the active exact-stall path is executable erasable `0223`, not a rope-label boundary
+    - that exact erasable word is currently seeded as the `VAC1ADRC` self-pointer `00223`
+    - the runtime now gives that exact-stall state one more continuation window before the remaining handoff is allowed
+  - later exact routed tracing now proves the lead-in to that later exact-stall state:
+    - bank-03 rope aftermath executes through:
+      - `03:1032`
+      - `03:1033`
+      - `03:1034`
+      - `03:1004`
+      - `03:0061`
+      - `03:0062`
+      - `03:0063`
+      - `03:0065`
+      - `03:0071`
+      - `03:0072`
+      - `03:0074`
+    - that path executes a real `TC 0177`
+    - execution then enters executable erasable at `0177` and linearly walks erasable words until the later `0223` self-loop
+  - the current unresolved ownership gap is therefore the exact return/transfer semantics or erasable-state progression that should keep Apollo moving from that `VAC1ADRC` stall toward `RESUME` / scheduler / `SUPDXCHZ`
+  - the remaining blocker is therefore narrower than the earlier `VAC1ADRC` description alone:
+    - it is the bank-03 `TC 0177` drop into executable erasable core-set state and the missing Apollo-owned core-set/return semantics that should replace it
   - corrected Apollo double-word CPU semantics for `DCA`, `DAS`, and `DXCH`
   - more honest interrupt lead-in seeding for the routed key path via `ARUPT`, `LRUPT`, `BRUPT`, and interrupted `BBANK`
   - Apollo-corrected channel-10 relay-row decoding for visible DSKY register digits and signs

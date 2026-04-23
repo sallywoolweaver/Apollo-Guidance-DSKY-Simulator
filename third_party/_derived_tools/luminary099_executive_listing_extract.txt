@@ -1,0 +1,67 @@
+6491:006640,000304: 06,2213           24070        NXTIFBIT           INCR     RUPTREG1                      	# ADVANCE BIT POSITION NUMBER.
+8548:008744,000187: 05,2642           03210                           CADR     DUMMYJOB   +2                 	# PICKS UP AT RELINT.   (DONT ZERO NEWJOB)
+8574:008772,000215: 05,2667           24320        GOPROG             INCR     REDOCTR                       	# ADVANCE RESTART COUNTER.
+11512:011775,000957: 43,2753           05165                           TC       SUPDXCHZ                      	# V82CALL IN DIFF SUPERBANK FROM V82PERF
+19080:019547,003051:    4203           05165                           TC       SUPDXCHZ                      	# DTCB WITH SUPERBIT SWITCHING
+19293:019765,003269: 40,3526           05166                           TC       SUPDXCHZ   +1                 	# DTCB WITH SUPERBIT SWITCHING
+20490:020990,000087: 42,3614           34041                           STCALL   TDEC1                         	# ADVANCE INTEGRATION TO TIME IN TDEC1
+20672:021174,000068: 25,2026           25756                           INCR     RFAILCNT                      	# ADVANCE FAIL COUNTER BUT ACCEPT BAD DATA
+25033:025638,004425:    6024           15165                           TCF      SUPDXCHZ                      	#
+25292:025904,004691: 32,2562           21102                           DAS      LOSSM                         	# ADVANCE LOS VECTOR 1/2 SECOND.
+26119:026749,000144:                                                                                          	#                               VEHICLE ORBIT CAN BE ADVANCED TO OBTAIN THE CDH
+26145:026775,000170:                                                                                          	#                               VEHICLE ORBIT CAN BE ADVANCED TO OBTAIN THE CDH
+26174:026805,000200:                                                                                          	#       ADVANCE
+26254:026886,000281: 35,2132           71016                                    ADVANCE                       	#
+26446:027082,000477:                                                                                          	#       ADVANCE
+26474:027111,000506: 35,2234           71016                                    ADVANCE                       	#
+27119:027771,001166:                                                                                          	# ..... ADVANCE .....
+27125:027777,001172: 34,3016           71220        ADVANCE            STQ      DLOAD                         	#
+28185:028858,000465: 35,2751           46360                                    PRECSET                       	# ADVANCE BOTH VEHICLES
+28417:029097,000704:                                                                                          	# ADVANCE PASSIVE VEH TO RENDEZVOUS TIME AND GET REQ VEL FROM LAMBERT
+42800:043810,000086:    6062           54006                           TS       BBANK                         	# IT MAY BE SAVED DIRECTLY BY CHANJOB.
+42809:043819,000095:    6067           24164                           INCR     LOC                           	# ADVANCE THE LOCATION COUNTER.
+43265:044292,000568:    6531           50163                           INDEX    MODE                          	# ADVANCE THE PUSHDOWN POINTER APPRO-
+43303:044331,000607:    6565           50163                           INDEX    MODE                          	# ADVANCE THE PUSHDOWN POINTER.
+43664:044704,000980:    7166           30136                           CA       DOTINC                        	# ADVANCE ADDRWD TO Y COMPONENT OF
+43917:044965,001241:    7435           34752                           CAF      TWO                           	# ADVANCE ADDRWD TO Y COMPONENT OF X.
+43956:045005,001281:    7472           34752                           CAF      TWO                           	# ADVANCE ADDRWD TO X2.
+43970:045019,001295:    7506           34752                           CAF      TWO                           	# ADVANCE ADDRWD TO X3.
+45934:047039,000226:                                                                                          	# IT WOULD BE TO THE USERS ADVANTAGE TO OCCASIONALLY CHECK ANY OF THESE SYMBOLS IN ORDER TO PREVENT ANY
+46215:047321,000080:    5125           12706                           TCF      CHANJOB                       	#
+46224:047331,000090:    5132           12705                           TCF      CHANJOB    -1                 	#
+46231:047339,000098:    5136           12776                           TCF      JOBSLP1                       	#
+46349:047460,000219: 01,2706           00004        CHANJOB            INHINT                                 	#
+46394:047505,000264: 01,2757           12764                           TCF      ENDPRCHG   -1                 	#
+46402:047514,000273: 01,2765           00003        ENDPRCHG           RELINT                                 	#
+46414:047527,000286: 01,2776           00004        JOBSLP1            INHINT                                 	#
+46426:047539,000298: 01,3011           00004        NUCHANG2           INHINT                                 	# QUICK... DONT LET NEWJOB CHANGE TO +0.
+46430:047543,000302: 01,3015           13216                           TCF      ADVAN      +2                 	# VIA NUDIRECT.  (VERY RARE CASE.)
+46436:047549,000308: 01,3022           12712                           TCF      CHANJOB    +4                 	#       POSSIBLE SLEEPING JOB.
+46560:047678,000437: 01,3160           13206                           TCF      DUMMYJOB                      	#
+46563:047681,000440: 01,3163           12764                           TCF      ENDPRCHG   -1                 	#
+46569:047687,000446: 01,3170           12704                           TCF      CHANJOB    -2                 	#
+46591:047710,000469: 01,3206           44755        DUMMYJOB           CS       ZERO                          	# SET NEWJOB TO -0 FOR IDLING.
+46597:047716,000475: 01,3214           10067        ADVAN              CCS      NEWJOB                        	# IS A NEWJOB ACTIVE?
+46598:047717,000476: 01,3215           13011                           TCF      NUCHANG2                      	# YES... ONE REQUIRING A CHANGE JOB.
+46600:047719,000478: 01,3217           13225                           TCF      NUDIRECT                      	# EXECUTION.
+46604:047723,000482: 01,3222           33224                           CAF      SELFBANK                      	#
+46605:047724,000483: 01,3223           15166                           TCF      SUPDXCHZ   +1                 	# AND DISPATCH JOB.
+46608:047727,000486: 01,3224           66102        SELFBANK           BBCON    SELFCHK                       	#
+46610:047729,000488: 01,3225           00006        NUDIRECT           EXTEND                                 	# TURN THE GREEN LIGHT BACK ON.
+46613:047732,000491: 01,3230           15165                           TCF      SUPDXCHZ                      	#
+46619:047738,000497:                                                                                          	# SUPDXCHZ - ROUTINE TO TRANSFER TO SUPERBANK.
+46621:047740,000499:                                                                                          	#               TCF     SUPDXCHZ        WITH 2CADR OF DESIRED LOCATION IN A + L.
+46623:047742,000501:    5165           56001        SUPDXCHZ           XCH      L                             	# BASIC.
+53913:055199,000218: 43,3335           03214                           CADR     ADVAN                         	#
+54165:055456,000475: 43,3661           27374                           ADS      SKEEP4                        	# ERC BIT OF THE 37 TO 40 ADVANCE.
+55669:056993,000749: 07,3702           40072                           CS       RUPTREG3                      	# ADVANCE LOC IF SUCCESSFUL.
+64130:   130,E:   ABDVCONV     E7,1513  		   175,E:   ACCWD        E5,1512  		   220,F:   ADVAN        01,3214  
+64131:   131,F:   ABLOAD       41,2703  		   176,C:   ACC4-2FL     0000307  		   221,F:   ADVANCE      34,3016  
+64345:   699,F:   CALCPERR     16,3446  		   744,E:   CDUFLAG      E5,1461  		   789,F:   CHANJOB      01,2706  
+64614:  1501,C:   DRIFTFLG     0000036  		  1546,F:   DSPLYMSK     20,2113  		  1591,F:   DUMMYJOB     01,3206  
+64696:  1760,F:   ENDPRCHG     01,2765  		  1805,F:   ENGINOF3     36,3564  		  1850,F:   ERASLOOP     43,3367  
+64968:  2562,F:   INTVEL       11,2000  		  2607,F:   ITERATOR     12,2536  		  2651,F:   JOBSLP1      01,2776  
+65321:  3533,F:   NOQBRSM         5274  		  3578,F:   NOTPLAN      15,2523  		  3623,F:   NUCHANG2     01,3011  
+65322:  3534,F:   NOQRSM          5272  		  3579,F:   NOTP20       25,3041  		  3624,F:   NUDIRECT     01,3225  
+65867:  5142,F:   S+1             4753  		  5187,F:   SBIT8           4744  		  5232,F:   SELFBANK     01,3224  
+65994:  5536,F:   STEERING     36,3666  		  5581,F:   SUPDXCHZ        5165  		  5626,F:   S10BITS         5012  

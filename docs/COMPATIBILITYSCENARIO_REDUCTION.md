@@ -217,3 +217,13 @@ Reason:
   - Why it exists: Apollo still does not carry the pending request all the way to natural `SUPDXCHZ` / `SUPDXCHZ +1` before routed-step exhaustion
   - Apollo-owned replacement target: exact bank-03 interpreter aftermath that leads from post-capture execution into `RESUME` / `INTRSM` and then the later proven scheduler/transfer corridor
   - Reduced this batch: no; the blocker is now documented more precisely as exact exhaustion at `03:0223` with `resume=no` and `finalSlice=no`
+
+- Path: routed handoff trigger at exact executable-erasable `VAC1ADRC` loop
+  - Why it exists: the routed path still does not carry the pending request to natural transfer on its own; after exact request capture it falls into executable erasable at `0223`, whose current seeded word is the `VAC1ADRC` self-pointer `00223`
+  - Apollo-owned replacement target: exact Apollo return/transfer semantics and/or exact erasable state that should carry the path from that `VAC1ADRC` availability state onward into `RESUME` / later scheduler transfer ownership without emulator handoff
+  - Reduced this batch: yes; the remaining handoff is no longer keyed only to flat routed-step exhaustion when that state is reached, and now uses an exact-stall continuation window plus an exact-stall-triggered handoff
+
+- Path: bank-03 post-capture `TC 0177` drop into executable erasable core-set state
+  - Why it exists: the routed trace now proves the pre-transfer drop is not just the later `0223` self-loop; bank-03 rope aftermath executes a real `TC 0177`, then linear execution walks erasable words until the later `0223` loop
+  - Apollo-owned replacement target: exact Executive/interpreter/core-set state or return/transfer semantics that should keep Apollo from executing the anonymous erasable pool beginning at `0177`
+  - Reduced this batch: no runtime path removed, but the blocker is now identified precisely enough to replace the earlier vague “bank-03 aftermath” description

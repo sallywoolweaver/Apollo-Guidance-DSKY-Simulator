@@ -1288,6 +1288,86 @@
   - local fallback command parsing and entry buffering still remain when Apollo display/input ownership is absent
   - phase ownership, telemetry, and mission outcomes remain compatibility-owned
 
+## 2026-04-23 - the remaining forced handoff is now pinned to an exact bank-03 `TC 0177` drop into executable erasable core-set state
+
+- What the captured Apollo request words `02077 / 60101` mean in the routed path:
+  - unchanged:
+    - `02077` is the captured `2CADR` target-address word
+    - `60101` is the captured bank/BBCON word
+    - the exact effective routed target remains `40:0077`
+    - the post-dispatch path remains runtime-proven through `CHARIN_PREENTRY -> CHARIN -> CHARIN2 -> ENDOFJOB`
+- What part of the post-capture handoff timing/dispatch path was still custom before this batch:
+  - the remaining handoff still occurred after Apollo failed to make the pending request self-dispatch before the bounded exact-stall continuation window expired
+  - the visible description of that blocker was still too coarse and incorrectly treated `0223 = 00223` as a `VAC1ADRC`-owned pre-transfer stop
+- What part of that path was reduced or removed in this batch:
+  - no additional forced-handoff path was honestly removed in this pass
+  - the remaining gain is exact ownership proof:
+    - the routed trace now proves a bank-03 rope aftermath:
+      - `03:1032`
+      - `03:1033`
+      - `03:1034`
+      - `03:1004`
+      - `03:0061`
+      - `03:0062`
+      - `03:0063`
+      - `03:0065`
+      - `03:0071`
+      - `03:0072`
+      - `03:0074`
+    - that rope aftermath executes a real `TC 0177`
+    - execution then enters executable erasable at `0177` and linearly walks erasable words until the later exact `0223` self-loop
+- Which exact Apollo labels in the final remaining transition segment are now exercised:
+  - no new natural-transfer or final-slice label was honestly proven in this pass
+  - the previously proven final slice remains:
+    - `JOBSLP1`
+    - `JOBSLP2`
+    - `NUCHANG2`
+    - `DUMMYJOB`
+    - `ADVAN`
+    - `NUDIRECT`
+  - the exact post-`SUPDXCHZ` completion-side labels remain:
+    - `CHARIN_PREENTRY`
+    - `CHARIN`
+    - `CHARIN2`
+    - `ENDOFJOB`
+- What final forced handoff or completion budget was reduced or removed:
+  - no additional reduction of the final forced handoff in this pass beyond the already-preserved exact-stall continuation window
+  - no honest reduction of the post-`SUPDXCHZ` completion fallback budget in this pass
+- What exact semantic blocker still exists if fallback remains:
+  - the remaining blocker is now exact and narrower than “bank-03 interpreter aftermath” alone:
+    - after exact `NOVAC_NEWLOC` request capture, Apollo falls into executable erasable at exact address `0223`
+    - the current custom erasable initializer seeds `0223` as `00223`
+    - that is the `VAC1ADRC` self-pointer chain currently seeded from fresh-start Executive availability state
+    - the routed trace now proves the remaining handoff occurs only after an exact continuation window from that executable-erasable `0223` loop still shows:
+      - `resume=no`
+      - `finalSlice=no`
+      - `newjob=77777`
+      - `loc=00000`
+      - `bankset=77777`
+      - `priority=00000`
+  - the exact unresolved ownership gap is therefore one of:
+    - missing Apollo-owned return/transfer behavior that should not be falling into executable erasable `VAC1ADRC` here
+    - or insufficient Apollo-owned erasable/init state for that exact executable-erasable path
+  - corrected by the later exact trace in this batch:
+    - the routed pre-transfer drop is now proven to occur earlier, at a bank-03 rope aftermath that executes `TC 0177`
+    - execution then enters executable erasable at `0177` and linearly walks through erasable words until the later `0223` self-loop
+    - the exact blocker is therefore the bank-03 `TC 0177` drop into anonymous Executive/core-set erasable state, not request decode and not the later post-dispatch path
+- What runtime consequence is now more Apollo-driven:
+  - the remaining handoff timing is now tied to an exact Apollo-executed pre-transfer stall state rather than to the outer routed-step budget alone
+  - the routed trace now also proves the exact pre-transfer Apollo sequence that leads into that stall:
+    - bank-03 rope aftermath
+    - real `TC 0177`
+    - executable erasable walk from `0177`
+    - later exact self-loop at `0223`
+  - the post-dispatch completion path remains exact through `ENDOFJOB`
+- What still remains fallback/custom:
+  - the final forced handoff still exists if Apollo still does not reach natural `SUPDXCHZ` / `SUPDXCHZ +1` transfer state after the exact executable-erasable stall continuation
+  - the remaining post-`SUPDXCHZ` fallback budget still exists when exact `ENDOFJOB`, `ENDPRCHG`, `TASKOVER`, or `INTRSM` are not reached
+  - the remaining emulator-side post-capture path still decides when to invoke `SUPDXCHZ`
+  - the exact unresolved Apollo-owned replacement target is now the bank-03 `TC 0177` drop into executable erasable core-set state and the return/transfer semantics or core-set initialization that should replace it
+  - local fallback command parsing and entry buffering still remain when Apollo display/input ownership is absent
+  - phase ownership, telemetry, and mission outcomes remain compatibility-owned
+
 ## Preserved earlier gains
 
 - native CPU rope-label execution tracking

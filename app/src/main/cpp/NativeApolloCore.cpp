@@ -9,6 +9,7 @@
 #include "SnapshotBuilder.h"
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdarg>
 #include <cstdio>
@@ -65,6 +66,42 @@ bool isNaturalSupdxchzTransferState(const AgcCpu& cpu) {
         (state.programCounterOffset == kSupdxchzOffset || state.programCounterOffset == kSupdxchzPlusOneOffset);
 }
 
+bool isExactPostCaptureInterpreterStallState(const AgcCpu& cpu, const AgcMemoryImage& memoryImage) {
+    const auto& state = cpu.state();
+    return state.programCounterInErasable &&
+        state.programCounterOffset == 0223 &&
+        memoryImage.erasableWord(kNewJobAddress) == 077777 &&
+        memoryImage.erasableWord(kLocAddress) == 000000 &&
+        memoryImage.erasableWord(kBankSetAddress) == 077777 &&
+        memoryImage.erasableWord(kPriorityAddress) == 000000;
+}
+
+void logExactInterpreterStallState(const AgcCpu& cpu, const AgcMemoryImage& memoryImage, const char* prefix) {
+    const auto& state = cpu.state();
+    logExecutiveTracef(
+        "%s pc=%02o:%04o erasable=%s note=%s word=%05o q=%05o a=%05o l=%05o bb=%05o eb=%04o fb=%05o "
+        "arupt=%05o/%05o qrupt=%05o bankrupt=%05o brupt=%05o vac1use=%05o",
+        prefix,
+        state.programCounterBank,
+        state.programCounterOffset,
+        state.programCounterInErasable ? "yes" : "no",
+        state.executionNote.c_str(),
+        state.lastFetchedWord,
+        state.qRegister,
+        state.accumulator,
+        state.lRegister,
+        state.bbRegister,
+        state.ebRegister,
+        state.fbRegister,
+        memoryImage.erasableWord(kAruptAddress),
+        memoryImage.erasableWord(kLruptAddress),
+        memoryImage.erasableWord(012),
+        memoryImage.erasableWord(016),
+        memoryImage.erasableWord(kBruptAddress),
+        memoryImage.erasableWord(0223)
+    );
+}
+
 bool isExecutiveTraceLabel(const std::string& label) {
     return label == "KEYRUPT1" || label == "KEYCOM" || label == "ACCEPTUP" || label == "LODSAMPT" ||
         label == "NOVAC" || label == "NOVAC2" || label == "NOVAC3" || label == "CORFOUND" ||
@@ -84,6 +121,18 @@ struct ProgramPackageSections {
     std::vector<uint8_t> bootstrapBytes;
     bool ropeIsBinary = false;
     bool erasableIsBinary = false;
+};
+
+struct RecentExecutiveStep {
+    int bank = 0;
+    int offset = 0;
+    bool erasable = false;
+    uint16_t word = 0;
+    uint16_t q = 0;
+    uint16_t a = 0;
+    uint16_t l = 0;
+    std::string label;
+    std::string note;
 };
 
 bool consumeLengthDelimitedSection(
@@ -600,6 +649,102 @@ bool NativeApolloCore::continueAfterExecutiveDispatch(int maxInstructions) {
     return true;
 }
 
+bool NativeApolloCore::continueInterpreterStallToNaturalTransfer(int maxInstructions) {
+    uint32_t lastUnsupportedCount = cpu_->state().unsupportedOpcodeCount;
+    std::string lastTraceLabel;
+    bool sawResume = false;
+    bool sawFinalPreTransferTransition = false;
+    logExactInterpreterStallState(*cpu_, *memoryImage_, "interpreter-stall enter");
+    for (int instruction = 0; instruction < maxInstructions; ++instruction) {
+        cpu_->stepInstruction(*memoryImage_);
+        const auto& state = cpu_->state();
+        if (state.unsupportedOpcodeCount != lastUnsupportedCount) {
+            lastUnsupportedCount = state.unsupportedOpcodeCount;
+            logExecutiveTracef(
+                "unsupported interpreter-stall pc=%02o:%04o label=%s note=%s",
+                state.programCounterBank,
+                state.programCounterOffset,
+                state.currentLabel.c_str(),
+                state.executionNote.c_str()
+            );
+        }
+        if (isExecutiveTraceLabel(state.currentLabel) && state.currentLabel != lastTraceLabel) {
+            lastTraceLabel = state.currentLabel;
+            logExecutiveTracef(
+                "interpreter-stall label=%s pc=%02o:%04o note=%s newjob=%05o loc=%05o bankset=%05o priority=%05o",
+                state.currentLabel.c_str(),
+                state.programCounterBank,
+                state.programCounterOffset,
+                state.executionNote.c_str(),
+                memoryImage_->erasableWord(kNewJobAddress),
+                memoryImage_->erasableWord(kLocAddress),
+                memoryImage_->erasableWord(kBankSetAddress),
+                memoryImage_->erasableWord(kPriorityAddress)
+            );
+        }
+        if (state.executionNote == "RESUME") {
+            sawResume = true;
+            logExecutiveTracef(
+                "interpreter-stall resume pc=%02o:%04o newjob=%05o loc=%05o bankset=%05o priority=%05o",
+                state.programCounterBank,
+                state.programCounterOffset,
+                memoryImage_->erasableWord(kNewJobAddress),
+                memoryImage_->erasableWord(kLocAddress),
+                memoryImage_->erasableWord(kBankSetAddress),
+                memoryImage_->erasableWord(kPriorityAddress)
+            );
+        }
+        if (isFinalPreTransferTransitionLabel(state.currentLabel)) {
+            sawFinalPreTransferTransition = true;
+        }
+        if (state.programCounterBank == 02 && state.programCounterOffset == 01101) {
+            if (!dispatchCapturedNovacRequest()) {
+                return false;
+            }
+            continue;
+        }
+        if (isExecutiveCompletionBoundaryLabel(state.currentLabel)) {
+            logExecutiveTracef(
+                "interpreter-stall completion boundary=%s pc=%02o:%04o",
+                state.currentLabel.c_str(),
+                state.programCounterBank,
+                state.programCounterOffset
+            );
+            return true;
+        }
+        if (sawResume && pendingExecutiveRequest_.active && isNaturalSupdxchzTransferState(*cpu_)) {
+            const bool atSupdxchzPlusOne = state.programCounterOffset == kSupdxchzPlusOneOffset;
+            if (!armPendingExecutiveRequestAtCurrentTransferState(atSupdxchzPlusOne)) {
+                return false;
+            }
+            return continueAfterExecutiveDispatch(512);
+        }
+        if (state.programCounterInErasable && state.programCounterOffset == 0223 && instruction < 8) {
+            logExactInterpreterStallState(*cpu_, *memoryImage_, "interpreter-stall loop");
+        }
+    }
+
+    if (pendingExecutiveRequest_.active && sawFinalPreTransferTransition) {
+        return continueFinalTransitionToNaturalTransfer(256);
+    }
+
+    logExactInterpreterStallState(*cpu_, *memoryImage_, "interpreter-stall exit");
+    const auto& state = cpu_->state();
+    logExecutiveTracef(
+        "interpreter-stall exhausted pc=%02o:%04o label=%s resume=%s finalSlice=%s newjob=%05o loc=%05o bankset=%05o priority=%05o",
+        state.programCounterBank,
+        state.programCounterOffset,
+        state.currentLabel.c_str(),
+        sawResume ? "yes" : "no",
+        sawFinalPreTransferTransition ? "yes" : "no",
+        memoryImage_->erasableWord(kNewJobAddress),
+        memoryImage_->erasableWord(kLocAddress),
+        memoryImage_->erasableWord(kBankSetAddress),
+        memoryImage_->erasableWord(kPriorityAddress)
+    );
+    return false;
+}
+
 bool NativeApolloCore::continueFinalTransitionToNaturalTransfer(int maxInstructions) {
     uint32_t lastUnsupportedCount = cpu_->state().unsupportedOpcodeCount;
     std::string lastTraceLabel;
@@ -720,6 +865,9 @@ bool NativeApolloCore::runInstructionRoutedApolloInput(
     bool sawFinalPreTransferTransition = false;
     uint32_t lastUnsupportedCount = cpu_->state().unsupportedOpcodeCount;
     std::string lastTraceLabel;
+    std::array<RecentExecutiveStep, 32> recentSteps{};
+    size_t recentStepCount = 0;
+    bool loggedFirstExactStallEntry = false;
     logExecutiveTracef("routed input start entry=%s maxInstructions=%d", entryLabel.c_str(), maxInstructions);
     primeApolloKeyruptLeadInState();
     cpu_->clearInterruptTransientState();
@@ -732,6 +880,18 @@ bool NativeApolloCore::runInstructionRoutedApolloInput(
         cpu_->stepInstruction(*memoryImage_);
 
         const auto& state = cpu_->state();
+        recentSteps[recentStepCount % recentSteps.size()] = RecentExecutiveStep{
+            state.programCounterBank,
+            state.programCounterOffset,
+            state.programCounterInErasable,
+            state.lastFetchedWord,
+            state.qRegister,
+            state.accumulator,
+            state.lRegister,
+            state.currentLabel,
+            state.executionNote,
+        };
+        recentStepCount += 1;
         if (instruction < 24) {
             logExecutiveTracef(
                 "routed step=%d pc=%02o:%04o label=%s note=%s q=%05o a=%05o l=%05o",
@@ -771,6 +931,32 @@ bool NativeApolloCore::runInstructionRoutedApolloInput(
         }
         if (isFinalPreTransferTransitionLabel(state.currentLabel)) {
             sawFinalPreTransferTransition = true;
+        }
+        if (!loggedFirstExactStallEntry &&
+            pendingExecutiveRequest_.active &&
+            !sawResume &&
+            !sawFinalPreTransferTransition &&
+            isExactPostCaptureInterpreterStallState(*cpu_, *memoryImage_)) {
+            loggedFirstExactStallEntry = true;
+            const size_t historyCount = std::min(recentStepCount, recentSteps.size());
+            for (size_t index = 0; index < historyCount; ++index) {
+                const size_t slot = (recentStepCount - historyCount + index) % recentSteps.size();
+                const auto& step = recentSteps[slot];
+                logExecutiveTracef(
+                    "exact-stall entry history[%d] pc=%02o:%04o erasable=%s label=%s note=%s word=%05o q=%05o a=%05o l=%05o",
+                    static_cast<int>(index),
+                    step.bank,
+                    step.offset,
+                    step.erasable ? "yes" : "no",
+                    step.label.c_str(),
+                    step.note.c_str(),
+                    step.word,
+                    step.q,
+                    step.a,
+                    step.l
+                );
+            }
+            logExactInterpreterStallState(*cpu_, *memoryImage_, "exact-stall first-entry");
         }
         if (state.programCounterBank == 02 && state.programCounterOffset == 01101) {
             if (!dispatchCapturedNovacRequest()) {
@@ -817,13 +1003,38 @@ bool NativeApolloCore::runInstructionRoutedApolloInput(
     }
 
     if (pendingExecutiveRequest_.active) {
+        const bool exactInterpreterStall =
+            !sawResume && !sawFinalPreTransferTransition &&
+            isExactPostCaptureInterpreterStallState(*cpu_, *memoryImage_);
+        if (!sawResume && !sawFinalPreTransferTransition &&
+            isExactPostCaptureInterpreterStallState(*cpu_, *memoryImage_)) {
+            if (continueInterpreterStallToNaturalTransfer(256)) {
+                return true;
+            }
+            logExecutiveTracef(
+                "exact interpreter stall handoff target=%02o:%04o label=%s pc=%02o:%04o newjob=%05o loc=%05o bankset=%05o priority=%05o",
+                pendingExecutiveRequest_.targetBank,
+                pendingExecutiveRequest_.targetOffset,
+                pendingExecutiveRequest_.targetLabel.c_str(),
+                cpu_->state().programCounterBank,
+                cpu_->state().programCounterOffset,
+                memoryImage_->erasableWord(kNewJobAddress),
+                memoryImage_->erasableWord(kLocAddress),
+                memoryImage_->erasableWord(kBankSetAddress),
+                memoryImage_->erasableWord(kPriorityAddress)
+            );
+            if (!dispatchPendingExecutiveRequest()) {
+                return false;
+            }
+            return continueAfterExecutiveDispatch(512);
+        }
         if (sawFinalPreTransferTransition) {
             if (continueFinalTransitionToNaturalTransfer(256)) {
                 return true;
             }
         }
         logExecutiveTracef(
-            "routed-step exhaustion pending target=%02o:%04o label=%s pc=%02o:%04o current=%s resume=%s finalSlice=%s newjob=%05o loc=%05o bankset=%05o priority=%05o",
+            "routed-step exhaustion pending target=%02o:%04o label=%s pc=%02o:%04o current=%s resume=%s finalSlice=%s exactStall=%s newjob=%05o loc=%05o bankset=%05o priority=%05o",
             pendingExecutiveRequest_.targetBank,
             pendingExecutiveRequest_.targetOffset,
             pendingExecutiveRequest_.targetLabel.c_str(),
@@ -832,6 +1043,7 @@ bool NativeApolloCore::runInstructionRoutedApolloInput(
             cpu_->state().currentLabel.c_str(),
             sawResume ? "yes" : "no",
             sawFinalPreTransferTransition ? "yes" : "no",
+            exactInterpreterStall ? "yes" : "no",
             memoryImage_->erasableWord(kNewJobAddress),
             memoryImage_->erasableWord(kLocAddress),
             memoryImage_->erasableWord(kBankSetAddress),

@@ -31,7 +31,15 @@ constexpr uint16_t kSupdxchzPlusOneOffset = 03166 & 01777;
 constexpr uint16_t kNewJobAddress = 067;
 constexpr uint16_t kLocAddress = 0164;
 constexpr uint16_t kBankSetAddress = 0165;
+constexpr uint16_t kPushLocAddress = 0166;
 constexpr uint16_t kPriorityAddress = 0167;
+constexpr uint16_t kCoreSetBaseAddress = 0154;
+constexpr uint16_t kCoreSetStride = 012;
+constexpr uint16_t kCoreSet1ModeAddress = 0177;
+constexpr uint16_t kCoreSet1LocAddress = 0200;
+constexpr uint16_t kCoreSet1BankSetAddress = 0201;
+constexpr uint16_t kCoreSet1PushLocAddress = 0202;
+constexpr uint16_t kCoreSet1PriorityAddress = 0203;
 constexpr char kExecTraceTag[] = "ApolloExecTrace";
 
 void logExecutiveTrace(const char* message) {
@@ -74,6 +82,44 @@ bool isExactPostCaptureInterpreterStallState(const AgcCpu& cpu, const AgcMemoryI
         memoryImage.erasableWord(kLocAddress) == 000000 &&
         memoryImage.erasableWord(kBankSetAddress) == 077777 &&
         memoryImage.erasableWord(kPriorityAddress) == 000000;
+}
+
+bool isExactPostCaptureCoreSetDropState(const AgcCpu& cpu, const AgcMemoryImage& memoryImage) {
+    const auto& state = cpu.state();
+    return state.programCounterInErasable &&
+        state.programCounterOffset == kCoreSet1ModeAddress &&
+        memoryImage.erasableWord(kNewJobAddress) == 077777 &&
+        memoryImage.erasableWord(kLocAddress) == 000000 &&
+        memoryImage.erasableWord(kBankSetAddress) == 077777 &&
+        memoryImage.erasableWord(kPriorityAddress) == 000000;
+}
+
+void logExactCoreSetDropState(const AgcCpu& cpu, const AgcMemoryImage& memoryImage, const char* prefix) {
+    const auto& state = cpu.state();
+    const uint16_t offsetFromBase = static_cast<uint16_t>((state.programCounterOffset - kCoreSetBaseAddress) & 01777);
+    const uint16_t coreSetIndex = static_cast<uint16_t>(offsetFromBase / kCoreSetStride);
+    const uint16_t slot = static_cast<uint16_t>(offsetFromBase % kCoreSetStride);
+    logExecutiveTracef(
+        "%s pc=%02o:%04o note=%s coreSet=%o slot=%o mode=%05o loc=%05o bankset=%05o pushloc=%05o priority=%05o "
+        "q=%05o a=%05o l=%05o bb=%05o eb=%04o fb=%05o",
+        prefix,
+        state.programCounterBank,
+        state.programCounterOffset,
+        state.executionNote.c_str(),
+        coreSetIndex,
+        slot,
+        memoryImage.erasableWord(kCoreSet1ModeAddress),
+        memoryImage.erasableWord(kCoreSet1LocAddress),
+        memoryImage.erasableWord(kCoreSet1BankSetAddress),
+        memoryImage.erasableWord(kCoreSet1PushLocAddress),
+        memoryImage.erasableWord(kCoreSet1PriorityAddress),
+        state.qRegister,
+        state.accumulator,
+        state.lRegister,
+        state.bbRegister,
+        state.ebRegister,
+        state.fbRegister
+    );
 }
 
 void logExactInterpreterStallState(const AgcCpu& cpu, const AgcMemoryImage& memoryImage, const char* prefix) {
@@ -654,10 +700,18 @@ bool NativeApolloCore::continueInterpreterStallToNaturalTransfer(int maxInstruct
     std::string lastTraceLabel;
     bool sawResume = false;
     bool sawFinalPreTransferTransition = false;
+    if (isExactPostCaptureCoreSetDropState(*cpu_, *memoryImage_)) {
+        logExactCoreSetDropState(*cpu_, *memoryImage_, "core-set drop enter");
+    }
     logExactInterpreterStallState(*cpu_, *memoryImage_, "interpreter-stall enter");
     for (int instruction = 0; instruction < maxInstructions; ++instruction) {
         cpu_->stepInstruction(*memoryImage_);
         const auto& state = cpu_->state();
+        if (instruction < 8 && state.programCounterInErasable &&
+            state.programCounterOffset >= kCoreSet1ModeAddress &&
+            state.programCounterOffset <= kCoreSet1PriorityAddress) {
+            logExactCoreSetDropState(*cpu_, *memoryImage_, "core-set drop walk");
+        }
         if (state.unsupportedOpcodeCount != lastUnsupportedCount) {
             lastUnsupportedCount = state.unsupportedOpcodeCount;
             logExecutiveTracef(
@@ -863,11 +917,12 @@ bool NativeApolloCore::runInstructionRoutedApolloInput(
     activeDispatchTarget_ = ActiveDispatchTarget{};
     bool sawResume = false;
     bool sawFinalPreTransferTransition = false;
+    bool sawCoreSetDrop = false;
     uint32_t lastUnsupportedCount = cpu_->state().unsupportedOpcodeCount;
     std::string lastTraceLabel;
     std::array<RecentExecutiveStep, 32> recentSteps{};
     size_t recentStepCount = 0;
-    bool loggedFirstExactStallEntry = false;
+    bool loggedFirstCoreSetDropEntry = false;
     logExecutiveTracef("routed input start entry=%s maxInstructions=%d", entryLabel.c_str(), maxInstructions);
     primeApolloKeyruptLeadInState();
     cpu_->clearInterruptTransientState();
@@ -932,12 +987,13 @@ bool NativeApolloCore::runInstructionRoutedApolloInput(
         if (isFinalPreTransferTransitionLabel(state.currentLabel)) {
             sawFinalPreTransferTransition = true;
         }
-        if (!loggedFirstExactStallEntry &&
+        if (!loggedFirstCoreSetDropEntry &&
             pendingExecutiveRequest_.active &&
             !sawResume &&
             !sawFinalPreTransferTransition &&
-            isExactPostCaptureInterpreterStallState(*cpu_, *memoryImage_)) {
-            loggedFirstExactStallEntry = true;
+            isExactPostCaptureCoreSetDropState(*cpu_, *memoryImage_)) {
+            loggedFirstCoreSetDropEntry = true;
+            sawCoreSetDrop = true;
             const size_t historyCount = std::min(recentStepCount, recentSteps.size());
             for (size_t index = 0; index < historyCount; ++index) {
                 const size_t slot = (recentStepCount - historyCount + index) % recentSteps.size();
@@ -956,6 +1012,7 @@ bool NativeApolloCore::runInstructionRoutedApolloInput(
                     step.l
                 );
             }
+            logExactCoreSetDropState(*cpu_, *memoryImage_, "core-set drop first-entry");
             logExactInterpreterStallState(*cpu_, *memoryImage_, "exact-stall first-entry");
         }
         if (state.programCounterBank == 02 && state.programCounterOffset == 01101) {
@@ -1003,16 +1060,21 @@ bool NativeApolloCore::runInstructionRoutedApolloInput(
     }
 
     if (pendingExecutiveRequest_.active) {
+        const bool exactCoreSetDrop =
+            !sawResume && !sawFinalPreTransferTransition &&
+            isExactPostCaptureCoreSetDropState(*cpu_, *memoryImage_);
         const bool exactInterpreterStall =
             !sawResume && !sawFinalPreTransferTransition &&
             isExactPostCaptureInterpreterStallState(*cpu_, *memoryImage_);
         if (!sawResume && !sawFinalPreTransferTransition &&
-            isExactPostCaptureInterpreterStallState(*cpu_, *memoryImage_)) {
+            (exactCoreSetDrop || exactInterpreterStall || sawCoreSetDrop)) {
             if (continueInterpreterStallToNaturalTransfer(256)) {
                 return true;
             }
             logExecutiveTracef(
-                "exact interpreter stall handoff target=%02o:%04o label=%s pc=%02o:%04o newjob=%05o loc=%05o bankset=%05o priority=%05o",
+                (exactCoreSetDrop || sawCoreSetDrop)
+                    ? "exact core-set drop handoff target=%02o:%04o label=%s pc=%02o:%04o newjob=%05o loc=%05o bankset=%05o priority=%05o"
+                    : "exact interpreter stall handoff target=%02o:%04o label=%s pc=%02o:%04o newjob=%05o loc=%05o bankset=%05o priority=%05o",
                 pendingExecutiveRequest_.targetBank,
                 pendingExecutiveRequest_.targetOffset,
                 pendingExecutiveRequest_.targetLabel.c_str(),
@@ -1043,7 +1105,7 @@ bool NativeApolloCore::runInstructionRoutedApolloInput(
             cpu_->state().currentLabel.c_str(),
             sawResume ? "yes" : "no",
             sawFinalPreTransferTransition ? "yes" : "no",
-            exactInterpreterStall ? "yes" : "no",
+            (exactCoreSetDrop || exactInterpreterStall || sawCoreSetDrop) ? "yes" : "no",
             memoryImage_->erasableWord(kNewJobAddress),
             memoryImage_->erasableWord(kLocAddress),
             memoryImage_->erasableWord(kBankSetAddress),

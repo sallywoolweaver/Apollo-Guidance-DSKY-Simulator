@@ -227,3 +227,13 @@ Reason:
   - Why it exists: the routed trace now proves the pre-transfer drop is not just the later `0223` self-loop; bank-03 rope aftermath executes a real `TC 0177`, then linear execution walks erasable words until the later `0223` loop
   - Apollo-owned replacement target: exact Executive/interpreter/core-set state or return/transfer semantics that should keep Apollo from executing the anonymous erasable pool beginning at `0177`
   - Reduced this batch: no runtime path removed, but the blocker is now identified precisely enough to replace the earlier vague “bank-03 aftermath” description
+
+- 2026-04-24 clarification for the `TC 0177` blocker
+  - the latest routed proof identifies `0177` as dynamic core set 1 `MODE`
+  - the following saved core-set words are:
+    - `0200` -> `LOC`
+    - `0201` -> `BANKSET`
+    - `0202` -> `PUSHLOC`
+    - `0203` -> `PRIORITY`
+  - Reduced this batch: yes; the remaining continuation/handoff path is now keyed to the exact core-set-drop origin at `03:0177` rather than only the downstream `03:0223` loop
+  - Apollo-owned replacement target: exact return/transfer/core-set semantics that should provide valid suspended-job or resumed interpretive state at that drop instead of dormant core-set contents

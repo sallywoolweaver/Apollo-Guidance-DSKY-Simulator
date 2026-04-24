@@ -136,3 +136,12 @@
 
 - The app now runs more real Apollo-derived rope memory than before.
 - The app still does not honestly qualify as running Apollo software in the strict sense, because `CompatibilityScenario` still owns too much visible runtime behavior.
+
+- 2026-04-24 clarification for the active pre-transfer blocker:
+  - the latest routed trace identifies the executable-erasable `TC 0177` target as dynamic core set 1 state:
+    - `0177` -> `MODE`
+    - `0200` -> `LOC`
+    - `0201` -> `BANKSET`
+    - `0202` -> `PUSHLOC`
+    - `0203` -> `PRIORITY`
+  - the remaining forced handoff is now anchored to that exact core-set-drop origin rather than only the downstream `0223` symptom

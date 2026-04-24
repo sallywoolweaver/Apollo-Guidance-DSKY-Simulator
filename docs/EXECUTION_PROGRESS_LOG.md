@@ -1377,3 +1377,51 @@
 - DSKY `UNSUPPORTED <label>`
 - 1201/1202 alarm ownership in `AlarmExecutive`
 - stable JNI API
+
+## 2026-04-24 - the remaining forced handoff is now anchored to the exact core-set drop at `03:0177`
+
+- What the bank-03 `TC 0177` drop means in Apollo terms:
+  - the routed pre-transfer path still runs through exact bank-03 interpreter aftermath and then executes a real `TC 0177`
+  - the latest routed proof now identifies `0177` as dynamic core set 1 `MODE`, not a rope routine entry and not merely the later `VAC1ADRC` symptom
+  - the same proof shows the immediately following saved core-set words:
+    - `0200` -> `LOC`
+    - `0201` -> `BANKSET`
+    - `0202` -> `PUSHLOC`
+    - `0203` -> `PRIORITY`
+  - entering executable erasable at `0177` is therefore Apollo executing dormant core-set slot state as code, which is not correct for this routed moment
+- What part of the path was still custom before this batch:
+  - the remaining continuation/handoff path was still described and triggered from the downstream `03:0223` loop rather than from the earlier exact origin of the failure at `03:0177`
+- What part of that path was reduced or removed in this batch:
+  - reduced the remaining handoff trigger again:
+    - the continuation/handoff path is now keyed to the exact post-capture core-set drop at `03:0177`
+    - the routed trace now records the exact first-entry core-set state:
+      - `coreSet=1`
+      - `slot=11`
+      - `mode=00000`
+      - `loc=00000`
+      - `bankset=77777`
+      - `pushloc=00000`
+      - `priority=00000`
+- What final forced handoff or completion budget was reduced or removed:
+  - reduced:
+    - the final forced handoff is now anchored to the exact `03:0177` core-set-drop origin rather than only the later `03:0223` downstream loop
+  - not reduced:
+    - the final forced handoff still exists
+    - the post-`SUPDXCHZ` completion fallback budget was not reduced this batch
+- What exact semantic blocker still exists if fallback remains:
+  - after exact `NOVAC_NEWLOC` request capture and exact bank-03 interpreter aftermath, Apollo executes a real `TC 0177`
+  - that lands in dynamic core set 1 `MODE` and then walks dormant core-set words as code instead of reaching `RESUME` / later scheduler ownership
+  - the exact unresolved Apollo-owned replacement target is therefore the return/transfer/core-set behavior that should supply a valid suspended-job or resumed interpretive context at that point rather than raw core-set storage
+- What runtime consequence is now more Apollo-driven:
+  - the remaining pre-transfer fallback is now tied to the exact Apollo-owned core-set-drop origin
+  - the post-dispatch path remains exact through:
+    - `CHARIN_PREENTRY`
+    - `CHARIN`
+    - `CHARIN2`
+    - `ENDOFJOB`
+- What still remains fallback/custom:
+  - the final forced handoff still exists after the exact core-set-drop continuation window
+  - the post-`SUPDXCHZ` completion fallback budget still exists when exact `ENDOFJOB`, `ENDPRCHG`, `TASKOVER`, or `INTRSM` are not reached
+  - the emulator still decides when to invoke `SUPDXCHZ`
+  - the erasable initializer remains a custom asset even though the Executive words seeded from Apollo are preserved
+  - local fallback command parsing, telemetry, phase ownership, and mission outcomes remain custom

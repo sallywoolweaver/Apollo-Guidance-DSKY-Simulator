@@ -259,3 +259,11 @@ Those files are derived debugging artifacts, not Apollo artifacts.
 - That still does not finish the proof path, because Windows currently denies execution of that derived helper from this workspace with `Access is denied`, so no trustworthy Luminary 099 `.lst` has been emitted yet.
 - The active Luminary 099 erasable image is still a custom initializer. It now seeds only the Executive fresh-start words derived from Apollo source that are needed for this narrow path.
 - Some older overlay labels are still helper aliases rather than exact Apollo labels. Those should remain clearly marked as derived aliases, not historical labels.
+
+- 2026-04-24 clarification for the active pre-transfer blocker:
+  - `0177` is dynamic core set 1 `MODE`
+  - `0200` is dynamic core set 1 `LOC`
+  - `0201` is dynamic core set 1 `BANKSET`
+  - `0202` is dynamic core set 1 `PUSHLOC`
+  - `0203` is dynamic core set 1 `PRIORITY`
+  - the remaining forced-handoff trigger is now keyed to that exact core-set-drop origin rather than only the later `0223` symptom

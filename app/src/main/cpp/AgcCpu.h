@@ -45,6 +45,7 @@ class AgcCpu {
     uint16_t readOperandPairHigh(uint16_t address10, const AgcMemoryImage& memoryImage) const;
     uint16_t readOperandPairLow(uint16_t address10, const AgcMemoryImage& memoryImage) const;
     void writeOperandPair(uint16_t address10, uint16_t highWord, uint16_t lowWord, AgcMemoryImage& memoryImage);
+    uint16_t operandPairLowAddress(uint16_t address10) const;
     void advanceProgramCounter();
     void executeFetchedWord(uint16_t word, AgcMemoryImage& memoryImage);
 

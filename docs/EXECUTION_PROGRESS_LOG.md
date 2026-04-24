@@ -1425,3 +1425,49 @@
   - the emulator still decides when to invoke `SUPDXCHZ`
   - the erasable initializer remains a custom asset even though the Executive words seeded from Apollo are preserved
   - local fallback command parsing, telemetry, phase ownership, and mission outcomes remain custom
+
+## 2026-04-24 - `DTCB` / `DTCF` special-pair semantics are now exact, but the `TC 0177` core-set drop still remains
+
+- What the bank-03 `TC 0177` / dynamic core set 1 `MODE` transition means in Apollo terms:
+  - after exact `NOVAC_NEWLOC` request capture, the routed path still runs through exact bank-03 interpreter/Executive aftermath and reaches a real `TC 0177`
+  - `0177` is dynamic core set 1 `MODE`
+  - the immediately following words remain:
+    - `0200` -> `LOC`
+    - `0201` -> `BANKSET`
+    - `0202` -> `PUSHLOC`
+    - `0203` -> `PRIORITY`
+  - entering that core-set state as executable code is still incorrect for this routed moment
+- Whether the blocker is wrong state, wrong semantics, or both:
+  - the new CPU fix proves at least one exact semantic bug existed:
+    - special pair addressing for `DXCH Z` (`DTCB`) must use `Z/BBANK`
+    - special pair addressing for `DXCH FBANK` (`DTCF`) must use `FBANK/Z`
+    - the native CPU had still been using generic `(address,address-1)` pairing there
+  - after fixing that exactly, the routed trace still reaches the same `TC 0177 -> core set 1 MODE -> 0223` path
+  - the remaining blocker is therefore still semantic, but not explained by `DTCB` / `DTCF` pair addressing alone
+- What exact blocker was fixed or reduced this batch:
+  - fixed:
+    - the CPU now handles the exact Apollo special-register pairs for:
+      - `DXCH Z` / `DTCB` as `Z/BBANK`
+      - `DXCH FBANK` / `DTCF` as `FBANK/Z`
+  - reduced:
+    - the remaining blocker is now narrowed again, because the routed proof no longer has to treat those special transfer pairs as suspected mismatches
+- What final forced handoff or completion budget was reduced or removed:
+  - not reduced:
+    - the final forced handoff still remains after the exact core-set-drop continuation window
+    - the post-`SUPDXCHZ` completion fallback budget was not reduced this batch
+- What runtime consequence is now more Apollo-driven:
+  - Apollo-owned `DTCB` / `DTCF` transfer semantics are now exact in the native CPU rather than generic pair-address emulation
+  - the routed proof path remains exact through:
+    - request capture `02077 / 60101`
+    - exact target decode `40:0077`
+    - pre-transfer core-set drop at `03:0177`
+    - post-dispatch `CHARIN_PREENTRY -> CHARIN -> CHARIN2 -> ENDOFJOB`
+- What exact semantic blocker still exists if fallback remains:
+  - the remaining unresolved replacement target is still the Apollo-owned return/transfer/core-set behavior that should provide a valid suspended-job or resumed interpretive context at dynamic core set 1 `MODE`
+  - because the exact `DTCB` / `DTCF` pair semantics are now fixed and the same `TC 0177` drop still occurs, the remaining gap is deeper than that special-register pair bug
+- What still remains fallback/custom:
+  - the final forced handoff still exists
+  - the post-`SUPDXCHZ` completion fallback budget still exists when exact `ENDOFJOB`, `ENDPRCHG`, `TASKOVER`, or `INTRSM` are not reached
+  - the emulator still decides when to invoke `SUPDXCHZ`
+  - the erasable initializer remains a custom asset even though the seeded Executive words are Apollo-derived
+  - local fallback command parsing, telemetry, phase ownership, and mission outcomes remain custom

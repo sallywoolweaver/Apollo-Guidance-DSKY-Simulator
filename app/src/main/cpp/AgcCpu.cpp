@@ -476,13 +476,24 @@ uint16_t AgcCpu::readOperandPairHigh(uint16_t address10, const AgcMemoryImage& m
     return readOperand10(address10, memoryImage);
 }
 
+uint16_t AgcCpu::operandPairLowAddress(uint16_t address10) const {
+    const uint16_t normalized = address10 & kAddressMask10;
+    if (normalized == kRegZ) {
+        return kRegBB;
+    }
+    if (normalized == kRegFB) {
+        return kRegZ;
+    }
+    return static_cast<uint16_t>((normalized - 1) & kAddressMask10);
+}
+
 uint16_t AgcCpu::readOperandPairLow(uint16_t address10, const AgcMemoryImage& memoryImage) const {
-    return readOperand10(static_cast<uint16_t>((address10 - 1) & kAddressMask10), memoryImage);
+    return readOperand10(operandPairLowAddress(address10), memoryImage);
 }
 
 void AgcCpu::writeOperandPair(uint16_t address10, uint16_t highWord, uint16_t lowWord, AgcMemoryImage& memoryImage) {
     writeOperand10(address10, highWord, memoryImage);
-    writeOperand10(static_cast<uint16_t>((address10 - 1) & kAddressMask10), lowWord, memoryImage);
+    writeOperand10(operandPairLowAddress(address10), lowWord, memoryImage);
 }
 
 void AgcCpu::advanceProgramCounter() {

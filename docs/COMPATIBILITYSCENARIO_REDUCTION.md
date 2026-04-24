@@ -237,3 +237,9 @@ Reason:
     - `0203` -> `PRIORITY`
   - Reduced this batch: yes; the remaining continuation/handoff path is now keyed to the exact core-set-drop origin at `03:0177` rather than only the downstream `03:0223` loop
   - Apollo-owned replacement target: exact return/transfer/core-set semantics that should provide valid suspended-job or resumed interpretive state at that drop instead of dormant core-set contents
+
+- 2026-04-24 clarification for special `DTCB` / `DTCF` transfer semantics
+  - `DTCB = DXCH Z` must use the exact Apollo special pair `Z/BBANK`, not a generic `(Z,FBANK)` pair
+  - `DTCF = DXCH FBANK` must use the exact Apollo special pair `FBANK/Z`, not a generic `(FBANK,EBANK)` pair
+  - Reduced this batch: yes; the native CPU now executes those special transfer pairs exactly
+  - Remaining blocker after that fix: the routed trace still reaches the same `TC 0177 -> dynamic core set 1 MODE -> 0223` path, so the unresolved gap is still deeper return/transfer/core-set semantics, not just the low-word pairing bug

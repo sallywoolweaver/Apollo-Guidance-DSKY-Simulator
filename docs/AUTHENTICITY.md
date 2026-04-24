@@ -145,3 +145,7 @@
     - `0202` -> `PUSHLOC`
     - `0203` -> `PRIORITY`
   - the remaining forced handoff is now anchored to that exact core-set-drop origin rather than only the downstream `0223` symptom
+  - the native CPU also now honors the exact special Apollo transfer pairs:
+    - `DTCB = DXCH Z` as `Z/BBANK`
+    - `DTCF = DXCH FBANK` as `FBANK/Z`
+  - because the routed trace still reaches the same core-set drop after that fix, the remaining blocker is still deeper than those pair-addressing semantics alone

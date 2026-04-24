@@ -267,3 +267,6 @@ Those files are derived debugging artifacts, not Apollo artifacts.
   - `0202` is dynamic core set 1 `PUSHLOC`
   - `0203` is dynamic core set 1 `PRIORITY`
   - the remaining forced-handoff trigger is now keyed to that exact core-set-drop origin rather than only the later `0223` symptom
+  - exact special transfer-pair semantics are also now aligned with Apollo:
+    - `DTCB = DXCH Z` uses `Z/BBANK`
+    - `DTCF = DXCH FBANK` uses `FBANK/Z`

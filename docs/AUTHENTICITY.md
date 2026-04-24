@@ -149,3 +149,8 @@
     - `DTCB = DXCH Z` as `Z/BBANK`
     - `DTCF = DXCH FBANK` as `FBANK/Z`
   - because the routed trace still reaches the same core-set drop after that fix, the remaining blocker is still deeper than those pair-addressing semantics alone
+  - Apollo source comments now also pin the active remaining ownership gap to the exact Executive restore corridor:
+    - `CHANJOB`
+    - `ENDPRCHG`
+    - `INTRSM`
+  - the app still does not honestly qualify that corridor as Apollo-owned, because the emulator still forces the handoff before Apollo naturally completes that restore path

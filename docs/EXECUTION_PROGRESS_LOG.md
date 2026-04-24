@@ -1471,3 +1471,44 @@
   - the emulator still decides when to invoke `SUPDXCHZ`
   - the erasable initializer remains a custom asset even though the seeded Executive words are Apollo-derived
   - local fallback command parsing, telemetry, phase ownership, and mission outcomes remain custom
+
+## 2026-04-24 - source proof now pins the remaining gap to the `CHANJOB` / `ENDPRCHG` / `INTRSM` corridor, but the broad pair-order fix was not honest to keep
+
+- What the bank-03 `TC 0177` / dynamic core set 1 `MODE` transition means in Apollo terms:
+  - Apollo source now directly confirms that the blocked routed corridor is the Executive job-change / resume path:
+    - `CHANJOB` swaps `LOC/BANKSET`, `MPAC`, and `PUSHLOC/PRIORITY`
+    - `ENDPRCHG` dispatches basic jobs with `DTCB`
+    - interpretive resumes go through `INTRSM`
+  - `INTRSM` resumes a suspended interpretive job by loading `BBANK` and continuing at `INTPRET +3`
+  - the routed `TC 0177` drop therefore remains the exact point where Apollo should have an already-restored valid context instead of dormant core-set words
+- Whether entering core-set saved state as executable code there is correct or incorrect:
+  - incorrect
+- Whether the blocker is wrong state, wrong semantics, or both:
+  - both are still implicated, but the strongest proof is semantic:
+    - Apollo source comments prove the Executive corridor depends on exact pair semantics for:
+      - `DXCH LOC` -> `LOC/BANKSET`
+      - `DXCH PUSHLOC` -> `PUSHLOC/PRIORITY`
+      - `DCA 0` -> addressed word in `A`, following word in `L`
+    - a broad emulator flip to that global pair ordering/regiser convention caused an immediate regression before `NOVAC` request capture and had to be reverted
+    - so the remaining honest blocker is now narrower than "all pair ops are globally reversed", but still lives inside the exact `CHANJOB` / `ENDPRCHG` / `INTRSM` transition semantics
+- What exact blocker was fixed or reduced this batch:
+  - reduced in precision only:
+    - the remaining blocker is no longer described as generic "core-set work"
+    - it is now pinned to the exact Executive transition corridor that should restore/select the runnable context before the `TC 0177` drop
+  - not landed:
+    - the broad pair-order experiment was reverted because it broke the preserved routed proof before exact request capture
+- What final forced handoff or completion budget was reduced or removed:
+  - none this batch
+- What runtime consequence is now more Apollo-driven:
+  - the runtime remains at the preserved exact state:
+    - exact request capture `02077 / 60101`
+    - exact target decode `40:0077`
+    - exact pre-transfer core-set drop at `03:0177`
+    - exact post-dispatch `CHARIN_PREENTRY -> CHARIN -> CHARIN2 -> ENDOFJOB`
+- What exact semantic blocker still exists if fallback remains:
+  - the remaining unresolved replacement target is the exact `CHANJOB` / `ENDPRCHG` / `INTRSM` restore/dispatch corridor
+  - Apollo still is not restoring or selecting a valid runnable basic or interpretive context before falling into dynamic core set 1 `MODE`
+- What still remains fallback/custom:
+  - the final forced handoff still exists
+  - the post-`SUPDXCHZ` completion fallback budget still exists when exact `ENDOFJOB`, `ENDPRCHG`, `TASKOVER`, or `INTRSM` are not reached
+  - the emulator still decides when to invoke `SUPDXCHZ`

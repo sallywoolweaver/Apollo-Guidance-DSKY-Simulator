@@ -270,3 +270,8 @@ Those files are derived debugging artifacts, not Apollo artifacts.
   - exact special transfer-pair semantics are also now aligned with Apollo:
     - `DTCB = DXCH Z` uses `Z/BBANK`
     - `DTCF = DXCH FBANK` uses `FBANK/Z`
+  - Apollo source comments further pin the remaining restore path to:
+    - `CHANJOB` at `01:2706`
+    - `ENDPRCHG` at `01:2765`
+    - `INTRSM` at `03:2050`
+  - those are now the exact Apollo-owned replacement targets for the blocked `TC 0177 -> dynamic core set 1 MODE` transition

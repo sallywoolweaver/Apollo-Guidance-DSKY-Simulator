@@ -243,3 +243,11 @@ Reason:
   - `DTCF = DXCH FBANK` must use the exact Apollo special pair `FBANK/Z`, not a generic `(FBANK,EBANK)` pair
   - Reduced this batch: yes; the native CPU now executes those special transfer pairs exactly
   - Remaining blocker after that fix: the routed trace still reaches the same `TC 0177 -> dynamic core set 1 MODE -> 0223` path, so the unresolved gap is still deeper return/transfer/core-set semantics, not just the low-word pairing bug
+
+- 2026-04-24 clarification for the active Executive transition blocker
+  - Apollo source comments prove the blocked routed corridor uses exact pair/state transfers in:
+    - `CHANJOB` for `LOC/BANKSET` and `PUSHLOC/PRIORITY`
+    - `ENDPRCHG` for `DTCB`
+    - `INTRSM` for interpretive resume
+  - Reduced this batch: no runtime path removed
+  - Narrowed this batch: yes; the remaining blocker is now pinned to that exact `CHANJOB` / `ENDPRCHG` / `INTRSM` corridor rather than a generic core-set description

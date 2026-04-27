@@ -251,3 +251,11 @@ Reason:
     - `INTRSM` for interpretive resume
   - Reduced this batch: no runtime path removed
   - Narrowed this batch: yes; the remaining blocker is now pinned to that exact `CHANJOB` / `ENDPRCHG` / `INTRSM` corridor rather than a generic core-set description
+
+- 2026-04-27 clarification for the remaining Executive restore/dispatch mismatch
+  - Luminary listing proof shows the blocked Executive operands already align with the preserved ordinary `(address,address-1)` pair helper:
+    - `DXCH LOC` assembles as `52165`
+    - `DXCH PUSHLOC` assembles as `52167`
+    - `DCA MPAC` assembles as `30155`
+  - Reduced this batch: no runtime path removed
+  - Narrowed this batch: yes; the remaining blocker is now pinned more precisely to incomplete `CHANJOB / ENDPRCHG / INTRSM` restore/select runnable-context semantics rather than ordinary pair selection alone

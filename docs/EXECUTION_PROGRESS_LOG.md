@@ -1512,3 +1512,48 @@
   - the final forced handoff still exists
   - the post-`SUPDXCHZ` completion fallback budget still exists when exact `ENDOFJOB`, `ENDPRCHG`, `TASKOVER`, or `INTRSM` are not reached
   - the emulator still decides when to invoke `SUPDXCHZ`
+
+## 2026-04-27 - the remaining restore/dispatch mismatch is now narrower than ordinary pair selection alone
+
+- What `CHANJOB / ENDPRCHG / INTRSM` should do on this routed path:
+  - `CHANJOB` should swap the active run context with the selected dormant core set:
+    - `LOC/BANKSET`
+    - `MPAC`
+    - `PUSHLOC/PRIORITY`
+  - `ENDPRCHG` should then dispatch:
+    - basic jobs via `DTCB`
+    - interpretive jobs via `TS LOC` followed by `INTRSM`
+  - `INTRSM` should resume the suspended interpretive job by loading `BBANK` and continuing through `INTPRET +3`
+- Whether the blocker is restore semantics, dispatch semantics, wrong state, or both:
+  - both, but no longer reducible to ordinary pair selection alone
+  - Apollo source comments prove:
+    - `DXCH LOC` must operate on `LOC/BANKSET`
+    - `DXCH PUSHLOC` must operate on `PUSHLOC/PRIORITY`
+  - Luminary listing proof now also shows:
+    - `DXCH LOC` is assembled as `52165`
+    - `DXCH PUSHLOC` is assembled as `52167`
+    - `DCA MPAC` is assembled as `30155`
+  - those encodings are consistent with the preserved ordinary `(address,address-1)` double-word rule using the upper word of each Executive pair
+  - so the routed `TC 0177` drop is not explained by ordinary pair selection alone; the remaining gap is still deeper restore/select runnable-context semantics inside the exact Executive corridor
+- What exact blocker was fixed or reduced this batch:
+  - reduced in precision again:
+    - the active mismatch is no longer described as wrong ordinary pair selection
+    - it is now pinned to the exact `CHANJOB / ENDPRCHG / INTRSM` restore/select corridor after listing proof showed the Executive operands already align with the preserved pair helper
+  - not fixed:
+    - a broad global pair-order change was not kept, because earlier runtime proof already showed that it regresses the preserved routed path before exact `NOVAC` capture
+- What final forced handoff or completion budget was reduced or removed:
+  - none this batch
+- What runtime consequence is now more Apollo-driven:
+  - the preserved exact routed/runtime proof still remains intact:
+    - exact request capture `02077 / 60101`
+    - exact target decode `40:0077`
+    - exact pre-transfer drop at `03:0177`
+    - exact post-dispatch `CHARIN_PREENTRY -> CHARIN -> CHARIN2 -> ENDOFJOB`
+- What exact semantic blocker still exists if fallback remains:
+  - the remaining blocker is now the still-incomplete restore/select runnable-context semantics in the exact `CHANJOB` / `ENDPRCHG` / `INTRSM` corridor
+  - Apollo source requires that corridor to leave a valid basic or interpretive context in place before dispatch
+  - the preserved pair helper and the preserved `DTCB/DTCF` special cases are now consistent with the listing evidence, so the unresolved work is deeper state restoration/selection rather than ordinary pair-address selection
+- What still remains fallback/custom:
+  - the final forced handoff still exists
+  - the post-`SUPDXCHZ` completion fallback budget still exists when exact `ENDOFJOB`, `ENDPRCHG`, `TASKOVER`, or `INTRSM` are not reached
+  - the emulator still decides when to invoke `SUPDXCHZ`

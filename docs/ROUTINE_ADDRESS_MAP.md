@@ -275,3 +275,8 @@ Those files are derived debugging artifacts, not Apollo artifacts.
     - `ENDPRCHG` at `01:2765`
     - `INTRSM` at `03:2050`
   - those are now the exact Apollo-owned replacement targets for the blocked `TC 0177 -> dynamic core set 1 MODE` transition
+  - Luminary listing proof shows the Executive corridor operands already align with the preserved ordinary pair helper:
+    - `DXCH LOC` assembles as `52165`
+    - `DXCH PUSHLOC` assembles as `52167`
+    - `DCA MPAC` assembles as `30155`
+  - the remaining ownership gap in that corridor is therefore deeper restore/select runnable-context semantics, not ordinary pair selection alone

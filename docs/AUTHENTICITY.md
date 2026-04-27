@@ -154,3 +154,6 @@
     - `ENDPRCHG`
     - `INTRSM`
   - the app still does not honestly qualify that corridor as Apollo-owned, because the emulator still forces the handoff before Apollo naturally completes that restore path
+  - that ownership gap is now narrower still:
+    - Luminary listing proof shows the Executive `DXCH` and `DCA` operands in that corridor already align with the preserved ordinary pair helper
+    - so the remaining blocker is now deeper restore/select runnable-context semantics in `CHANJOB / ENDPRCHG / INTRSM`, not ordinary pair selection alone

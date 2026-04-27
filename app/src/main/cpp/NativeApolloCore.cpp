@@ -494,12 +494,13 @@ uint16_t NativeApolloCore::decode2CadrFixedBank(uint16_t targetAddress, uint16_t
 
 void NativeApolloCore::primeApolloKeyruptLeadInState() {
     const auto& state = cpu_->state();
+    const uint16_t interruptedReturnAddress = state.programCounterInErasable
+        ? static_cast<uint16_t>(state.programCounterOffset & 07777)
+        : fixedAddressForBankOffset(state.programCounterBank, state.programCounterOffset);
     memoryImage_->writeErasableWord(kAruptAddress, state.accumulator);
     memoryImage_->writeErasableWord(kLruptAddress, state.lRegister);
-    memoryImage_->writeErasableWord(
-        kBruptAddress,
-        fixedAddressForBankOffset(state.programCounterBank, state.programCounterOffset)
-    );
+    memoryImage_->writeErasableWord(kBruptAddress, interruptedReturnAddress);
+    cpu_->setQRegister(interruptedReturnAddress);
     cpu_->setAccumulator(state.bbRegister);
 }
 

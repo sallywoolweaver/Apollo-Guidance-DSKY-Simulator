@@ -176,6 +176,13 @@ void AgcCpu::setLRegister(uint16_t word) {
     state_.lRegister = maskWord(word);
 }
 
+void AgcCpu::setQRegister(uint16_t word) {
+    if (!state_.initialized) {
+        initialize();
+    }
+    state_.qRegister = maskWord(word);
+}
+
 void AgcCpu::setInputChannel(uint16_t channel, uint16_t word) {
     writeChannel(channel, word);
 }

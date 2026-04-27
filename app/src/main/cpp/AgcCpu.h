@@ -19,6 +19,7 @@ class AgcCpu {
     void clearInterruptTransientState();
     void setAccumulator(uint16_t word);
     void setLRegister(uint16_t word);
+    void setQRegister(uint16_t word);
     void setInputChannel(uint16_t channel, uint16_t word);
     void setInputChannelBits(uint16_t channel, uint16_t mask, bool asserted);
     void stepInstruction(AgcMemoryImage& memoryImage);

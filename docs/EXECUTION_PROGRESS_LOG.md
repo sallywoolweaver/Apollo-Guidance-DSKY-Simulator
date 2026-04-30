@@ -1,5 +1,138 @@
 # Execution Progress Log
 
+## 2026-04-28 - compatibility startup now uses the real binsource rope entry instead of the overlay-first debug label
+
+- What changed:
+  - changed `app/src/main/java/com/example/myapplication/data/program/ProgramAssetLoader.kt`, `loadRopeSection(...)`, so binsource-backed program metadata now always uses the parsed binsource entry point instead of overriding startup with the first rope-label overlay address
+  - this removes the compatibility-owned startup mismatch where the CPU could begin stepping from debug overlay label `04:1274 KEYRUPT1` rather than from the real Apollo rope entry
+- Apollo artifact used:
+  - `app/src/main/assets/programs/apollo11/lm/luminary099/AP11ROPE.binsource`
+- What exact upstream bank/runnable context this targets:
+  - the compatibility-owned pre-route stepping path should begin from the real rope entry bank/offset, not from a routed interrupt/debug label
+  - the binsource proof for the real startup bank is:
+    - `BANK=2`
+    - first data line begins `000040 ...`
+- What exact state was wrong before this batch:
+  - `ProgramAssetLoader` metadata selection let the rope-label overlay choose the startup PC
+  - on the active LM path, that meant compatibility stepping could begin from the first mapped debug label in the overlay rather than from the real rope entry
+  - that was upstream of the already-proven `BANKRUPT = 00000` symptom before routed `KEYRUPT1`
+- Whether `BANKRUPT` changed after the fix:
+  - not proven improved
+- Whether the downstream `TC 0177` path changed:
+  - not proven improved
+- What exact blocker was exposed by keeping the real binsource startup entry:
+  - the compatibility-owned pre-route stepping path no longer reaches the previously preserved routed-ready context
+  - when routed input was exercised on device with the real binsource startup entry retained, the routed instrumentation no longer produced the earlier exact `NOVAC` / `TC 0177` trace and the test process reported a crash before the Apollo trace tags were emitted
+  - this means the remaining blocker is now earlier than `primeApolloKeyruptLeadInState()` alone:
+    - `CompatibilityScenario::step(...)`
+    - `AgcCpu::step(...)`
+    must now be reconciled with the real Apollo startup entry if the routed key path is to preserve a valid interruptible runnable context
+- Whether the downstream `TC 0177` path changed:
+  - not verifiable on the final kept state because the compatibility-stepped runtime no longer reached the earlier routed trace corridor under device verification
+- What visible/runtime consequence is now more Apollo-driven:
+  - compatibility-owned CPU startup for binsource-backed images is now anchored to the real Apollo rope entry rather than to the first mapped debug overlay label
+- What still remains fallback/custom:
+  - interrupted runnable bank context before exact `KEYRUPT1` is still not proven fixed
+  - the final forced handoff still remains until the routed trace proves otherwise
+  - the post-`SUPDXCHZ` completion fallback budget still remains until the routed trace proves otherwise
+
+## 2026-04-27 - upstream bank-context experiment proved `resetForScenario()` alone is not the fix
+
+- What changed:
+  - tested a narrow runtime change in `app/src/main/cpp/AgcCpu.cpp`, `AgcCpu::resetForScenario(...)`, to seed switched-fixed bank context from `image.firstRopeBank` when the scenario entry bank is switched-fixed
+  - reverted that change after validation because it did not improve the routed path and was not a safe fix to keep
+- What exact upstream bank context Apollo should have before exact `KEYRUPT1`:
+  - live interrupted `Q`
+  - `A` holding the interrupted bank word that `KEYRUPT1` saves into `BANKRUPT`
+  - routed interrupt `BBANK` active for the interrupt-side bank
+- What exact routed result was observed:
+  - the preserved routed trace still entered exact `KEYRUPT1` with `A = 00000`
+  - `QRUPT` still captured correctly as `01307`
+  - `BANKRUPT` still remained `00000`
+  - the downstream failure corridor still remained:
+    - `TC 0177`
+    - dynamic core set 1 `MODE`
+    - later `0223`
+- What this proves:
+  - zeroing `fbRegister`, `ebRegister`, and `bbRegister` during `resetForScenario(...)` is not the only remaining upstream issue
+  - seeding bank context once from the startup entry bank is insufficient because the later compatibility-owned stepping path still reaches routed `KEYRUPT1` without a valid interrupted runnable bank word
+  - the remaining blocker is therefore in the compatibility-owned pre-route execution state advanced by:
+    - `CompatibilityScenario::step(...)`
+    - `AgcCpu::step(...)`
+    rather than in request decode, target decode, or the already-proven routed Executive corridor labels
+- Why the experiment was not kept:
+  - it produced no honest improvement in `BANKRUPT`
+  - it did not change the `TC 0177 -> MODE -> 0223` failure corridor
+  - the exact routed path had to be restored to the last known-good stable state
+- What still remains fallback/custom:
+  - the interrupted runnable bank context entering exact `KEYRUPT1`
+  - the resulting forced handoff after the exact core-set-drop continuation window
+  - the fallback post-`SUPDXCHZ` completion budget when exact completion boundaries are not reached
+
+## 2026-04-27 - hard blocker proved at compatibility-owned interrupted bank context ahead of `CHANJOB / ENDPRCHG / INTRSM`
+
+- What changed:
+  - no runtime/source change was kept in this pass
+  - traced the exact `CHANJOB / ENDPRCHG / INTRSM` corridor against the native CPU implementation and confirmed the current blocker is not ordinary pair-address selection alone
+  - confirmed the required corridor opcodes are already represented in `AgcCpu::executeFetchedWord(...)`, including:
+    - `LXCH`
+    - `XCH`
+    - `DXCH`
+    - `TS`
+    - `QXCH`
+    - `ROR`
+    - `WRITE`
+    - `DTCB`
+    - `BZMF`
+  - proved the remaining mismatch is upstream of that corridor in the compatibility-owned interrupted runnable-context snapshot:
+    - `CompatibilityScenario::resetFromBootstrap(...)`
+    - `CompatibilityScenario::step(...)`
+    - `AgcCpu::resetForScenario(...)`
+    - `NativeApolloCore::primeApolloKeyruptLeadInState()`
+- Apollo artifact used:
+  - `third_party/apollo/upstream/virtualagc/LUM69R2/EXECUTIVE.agc`
+  - `third_party/apollo/upstream/virtualagc/LUM69R2/INTERPRETER.agc`
+  - `third_party/_derived_tools/Luminary099.lst`
+- What exact Apollo-owned corridor behavior was confirmed:
+  - `CHANG1` should reach `CHANJOB` with:
+    - live interrupted `Q`
+    - `A` holding the interrupted bank word after `XCH BBANK`
+    - routed interrupt bank active in `BBANK`
+  - `CHANJOB` should swap dormant/active saved state, including:
+    - `LOC/BANKSET`
+    - `MPAC`
+    - `PUSHLOC/PRIORITY`
+  - `ENDPRCHG` should dispatch:
+    - basic jobs via `DXCH LOC` then `DTCB`
+    - interpretive jobs via `TS LOC` then `INTRSM`
+  - `INTRSM` should resume interpretive execution via:
+    - `LXCH BBANK`
+    - `TCF INTPRET +3`
+- What exact state mismatch still blocks that corridor:
+  - the compatibility-owned reset/step path still zeros the interrupted bank context before exact `KEYRUPT1`
+  - `AgcCpu::resetForScenario(...)` clears:
+    - `bbRegister`
+    - `ebRegister`
+    - `fbRegister`
+  - `NativeApolloCore::primeApolloKeyruptLeadInState()` can now seed live interrupted `Q`, but it still derives interrupted bank from those zeroed registers
+  - the routed trace therefore still shows:
+    - `QRUPT = 01307`
+    - `BANKRUPT = 00000`
+    - later `TC 0177 -> dynamic core set 1 MODE -> 0223`
+- Why no safe corridor-side runtime change was kept:
+  - any new corridor-local seeding of runnable bank/core-set state inside `CHANJOB / ENDPRCHG / INTRSM` would be hidden fallback replacing missing pre-interrupt Apollo-owned context rather than correcting a proven corridor semantic
+  - the exact missing state must be present before `KEYRUPT1`, not invented later inside the Executive restore/dispatch path
+- What visible runtime behavior became more emulator-driven:
+  - no new preserved runtime behavior changed in this pass
+  - the previously proven routed path remains intact:
+    - exact `NOVAC_NEWLOC` capture `02077 / 60101`
+    - exact target decode `40:0077`
+    - exact post-dispatch `CHARIN_PREENTRY -> CHARIN -> CHARIN2 -> ENDOFJOB`
+- What still remains compatibility-driven:
+  - the interrupted runnable bank context handed into exact `KEYRUPT1`
+  - the resulting forced handoff after the exact core-set-drop continuation window
+  - the fallback post-`SUPDXCHZ` completion budget when exact completion boundaries are not reached
+
 ## 2026-04-13 - Apollo 11 LM full-rope load replaces excerpt-only rope load
 
 - What changed:
@@ -1469,6 +1602,67 @@
   - the final forced handoff still exists
   - the post-`SUPDXCHZ` completion fallback budget still exists when exact `ENDOFJOB`, `ENDPRCHG`, `TASKOVER`, or `INTRSM` are not reached
   - the emulator still decides when to invoke `SUPDXCHZ`
+
+## 2026-04-27 - routed KEYRUPT lead-in now seeds live `Q`, and the remaining restore/dispatch blocker is the pre-route interrupted context snapshot itself
+
+- What exact restore/dispatch semantic was corrected this batch:
+  - `NativeApolloCore::primeApolloKeyruptLeadInState()` now seeds live `Q` with the interrupted return address before Apollo executes `KEYRUPT1`
+  - that is source-backed by the exact `KEYRUPT1` lead-in:
+    - `TS BANKRUPT`
+    - `XCH Q`
+    - `TS QRUPT`
+  - without a live interrupted `Q`, Apollo was storing a stale `QRUPT` before the later `RESUME` / `NOQRSM` corridor
+- What runtime change was observed after the fix:
+  - the routed on-device trace now proves `KEYRUPT1` sees live `Q = 01307` instead of a stale zero at first entry
+  - `QRUPT` is now preserved as `01307` in the later exact-stall trace
+- Whether the blocker is pair semantics only, or pair semantics plus another issue:
+  - pair semantics are not the active blocker here
+  - the remaining blocker is deeper interrupted-context restoration/selection ahead of `CHANJOB / ENDPRCHG / INTRSM`
+- What exact semantic blocker still exists if fallback remains:
+  - `NativeApolloCore::primeApolloKeyruptLeadInState()` still has no safe Apollo-owned interrupted `BBANK` / runnable-bank context to seed
+  - the rerun proves the pre-route CPU snapshot feeding that function can still be:
+    - effectively erasable-return shaped (`Q = 01307`)
+    - with zero interrupted bank context (`A = 00000`, `BANKRUPT = 00000` after `KEYRUPT1`)
+  - so Apollo still reaches the same `TC 0177 -> dynamic core set 1 MODE -> 0223` dormant-core-set drop after the later exact corridor
+- What final forced handoff or completion budget was reduced or removed:
+  - none this batch
+- What runtime consequence is now more Apollo-driven:
+  - the routed interrupt lead-in now preserves more exact Apollo-owned `KEYRUPT1` state before the Executive request path runs:
+    - exact live `Q`
+    - exact later `QRUPT`
+- What still remains fallback/custom:
+  - the final forced handoff still exists
+  - the post-`SUPDXCHZ` completion fallback budget still exists when exact `ENDOFJOB`, `ENDPRCHG`, `TASKOVER`, or `INTRSM` are not reached
+  - the emulator still decides when to invoke `SUPDXCHZ`
+
+## 2026-04-27 - direct `KEYRPTBB` / interrupted-bank lead-in injection is not yet safe to keep
+
+- What interrupted bank context Apollo should have before exact `KEYRUPT1`:
+  - the real interrupt lead-in is `DXCH ARUPT`, `CAF KEYRPTBB`, `XCH BBANK`, `TCF KEYRUPT1`
+  - so on entry to `KEYRUPT1`, Apollo should already have:
+    - the routed interrupt routine bank word loaded into `BBANK`
+    - the interrupted bank word left in `A` for `TS BANKRUPT`
+- What exact runtime/source change was attempted:
+  - I tried the narrowest direct source change in:
+    - `NativeApolloCore::primeApolloKeyruptLeadInState()`
+    - `NativeApolloCore::runInstructionRoutedApolloInput()`
+  - the experiment attempted to carry exact routed `KEYRPTBB` bank context into the routed `KEYRUPT1` entry path instead of relying only on the generic switched-bank jump
+- What exact hard blocker that experiment proved:
+  - the pre-route snapshot feeding `primeApolloKeyruptLeadInState()` still presents zero interrupted bank context on this routed path
+  - with that zero interrupted bank context, direct dependence on the routed interrupt-bank lead-in regressed the path before exact `NOVAC` capture:
+    - the route fell into unsupported bank-00 execution instead of preserving the proven `KEYRUPT1 -> LODSAMPT -> KEYCOM -> ACCEPTUP -> NOVAC` corridor
+  - that experimental change was therefore reverted to preserve the current exact routed state
+- What exact file/function/state blocker remains:
+  - `app/src/main/cpp/NativeApolloCore.cpp`
+  - `primeApolloKeyruptLeadInState()`
+  - the incoming CPU snapshot still lacks a valid Apollo-owned interrupted runnable bank context:
+    - `Q` is now correct
+    - `QRUPT` is now correct
+    - but the interrupted bank state available to seed `BANKRUPT` is still zero on this path
+- What still remains fallback/custom:
+  - the final forced handoff still exists
+  - the post-`SUPDXCHZ` completion fallback budget still exists when exact `ENDOFJOB`, `ENDPRCHG`, `TASKOVER`, or `INTRSM` are not reached
+  - the emulator still decides when to invoke `SUPDXCHZ`
   - the erasable initializer remains a custom asset even though the seeded Executive words are Apollo-derived
   - local fallback command parsing, telemetry, phase ownership, and mission outcomes remain custom
 
@@ -1557,3 +1751,78 @@
   - the final forced handoff still exists
   - the post-`SUPDXCHZ` completion fallback budget still exists when exact `ENDOFJOB`, `ENDPRCHG`, `TASKOVER`, or `INTRSM` are not reached
   - the emulator still decides when to invoke `SUPDXCHZ`
+
+## 2026-04-27 - de-scaffolding audit removed one dead runtime helper and classified the rest against the current Executive blocker
+
+- What scaffolding/helper path was removed:
+  - `app/src/main/cpp/NativeApolloCore.cpp:isSchedulerDispatchBoundaryLabel()`
+  - it was no longer referenced anywhere on the routed path and had become dead after later exact-state routing work replaced the older label-boundary scaffolding
+- What was checked before keeping the remaining scaffolding:
+  - exact routed request capture `02077 / 60101`
+  - exact target decode `40:0077`
+  - exact pre-transfer `03:0177 -> 0223` failure corridor
+  - exact post-dispatch `CHARIN_PREENTRY -> CHARIN -> CHARIN2 -> ENDOFJOB`
+- What exact scaffolding remains load-bearing:
+  - `NativeApolloCore::primeApolloKeyruptLeadInState()`
+  - `NativeApolloCore::dispatchCapturedNovacRequest()`
+  - `NativeApolloCore::dispatchPendingExecutiveRequest()`
+  - `NativeApolloCore::continueInterpreterStallToNaturalTransfer()`
+  - `NativeApolloCore::continueFinalTransitionToNaturalTransfer()`
+  - `NativeApolloCore::continueAfterExecutiveDispatch()` plus the remaining post-dispatch budget
+  - `DskyIo` fallback entry/consequence branches
+  - `CompatibilityScenario` mission/telemetry/phase ownership
+  - the custom erasable/bootstrap assets
+- What exact blocker still prevents larger helper-code removal:
+  - the remaining forced handoff helpers in `NativeApolloCore` are still blocked on the exact `CHANJOB / ENDPRCHG / INTRSM` restore-dispatch corridor and the resulting `TC 0177 -> dynamic core set 1 MODE -> 0223` drop
+  - removing them now would regress the currently proven Apollo-owned routed path rather than reveal more Apollo ownership
+
+## 2026-04-27 - the interrupted-bank blocker is upstream of `primeApolloKeyruptLeadInState()`
+
+- What interrupted bank context Apollo should have before exact `KEYRUPT1`:
+  - the real interrupt lead-in is:
+    - `DXCH ARUPT`
+    - `CAF KEYRPTBB`
+    - `XCH BBANK`
+    - `TCF KEYRUPT1`
+  - so `KEYRUPT1` should begin with:
+    - live interrupted `Q`
+    - `A` holding the interrupted `BBANK`
+    - routed interrupt `BBANK` already active
+- What `BANKRUPT` should be on this routed path:
+  - it should be the interrupted `BBANK` word left in `A` for `TS BANKRUPT`
+- What exact lead-in state was wrong before this batch:
+  - not just `primeApolloKeyruptLeadInState()`
+  - the upstream interrupted CPU snapshot already lacks any nonzero Apollo-owned bank context
+- What exact file/function/state blocker was proven this batch:
+  - `app/src/main/cpp/CompatibilityScenario.cpp`
+    - `CompatibilityScenario::resetFromBootstrap()`
+  - `app/src/main/cpp/AgcCpu.cpp`
+    - `AgcCpu::resetForScenario()`
+  - `app/src/main/cpp/CompatibilityScenario.cpp`
+    - `CompatibilityScenario::step()`
+  - those functions currently establish and advance a compatibility-owned CPU context where:
+    - `fbRegister = 00000`
+    - `ebRegister = 00000`
+    - `bbRegister = 00000`
+  - by the time `NativeApolloCore::primeApolloKeyruptLeadInState()` runs, the routed trace is interrupting that compatibility-owned zero-bank context, so `BANKRUPT` still becomes `00000`
+- Whether `BANKRUPT` changed after the attempted fix path:
+  - no
+- Whether the `TC 0177` failure path changed:
+  - no; the preserved routed trace still reaches:
+    - `TC 0177`
+    - dynamic core set 1 `MODE`
+    - later `0223`
+- What final forced handoff or completion budget was reduced or removed:
+  - none this batch
+- What exact blocker still exists if fallback remains:
+  - `NativeApolloCore::primeApolloKeyruptLeadInState()` cannot safely synthesize a nonzero interrupted bank word from Apollo semantics alone because the upstream compatibility-owned CPU snapshot has already discarded that runnable bank context
+- What runtime consequence is now more Apollo-driven:
+  - no new preserved runtime consequence was added in this pass
+  - the routed proof remains:
+    - exact request capture `02077 / 60101`
+    - exact target decode `40:0077`
+    - exact post-dispatch `CHARIN_PREENTRY -> CHARIN -> CHARIN2 -> ENDOFJOB`
+- What still remains fallback/custom:
+  - the final forced handoff still exists
+  - the post-`SUPDXCHZ` completion fallback budget still exists when exact `ENDOFJOB`, `ENDPRCHG`, `TASKOVER`, or `INTRSM` are not reached
+  - the compatibility-owned startup/step path still does not provide a real interrupted runnable bank context before routed `KEYRUPT1`

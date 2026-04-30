@@ -38,7 +38,7 @@ class ProgramAssetLoader(
         if (ropePath.endsWith(".binsource", ignoreCase = true)) {
             val binsource = assetManager.open(ropePath).bufferedReader().use { it.readText() }
             val parsed = parseBinsourceToRopeBinary(binsource)
-            val effectiveEntryPoint = entryPoint ?: RopeWordAddress(parsed.firstBank, parsed.firstOffset)
+            val effectiveEntryPoint = RopeWordAddress(parsed.firstBank, parsed.firstOffset)
             val metadata = buildString {
                 appendLine("image_type=apollo_program_rope_binary")
                 appendLine("source_name=${ropePath.substringAfterLast('/').substringBeforeLast('.')}")

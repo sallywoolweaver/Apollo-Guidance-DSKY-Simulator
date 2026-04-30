@@ -157,3 +157,8 @@
   - that ownership gap is now narrower still:
     - Luminary listing proof shows the Executive `DXCH` and `DCA` operands in that corridor already align with the preserved ordinary pair helper
     - so the remaining blocker is now deeper restore/select runnable-context semantics in `CHANJOB / ENDPRCHG / INTRSM`, not ordinary pair selection alone
+  - the routed keyrupt lead-in now also preserves live interrupted `Q` before Apollo executes exact `KEYRUPT1`, so later `QRUPT` and the `RESUME` / `NOQRSM` corridor are less emulator-distorted than before
+  - however, the rerun also proves the pre-route interrupted snapshot still does not supply a valid Apollo-owned interrupted bank context:
+    - `KEYRUPT1` still saves `BANKRUPT = 00000`
+    - the route still falls through `TC 0177 -> dynamic core set 1 MODE -> 0223`
+  - the remaining ownership gap is therefore the interrupted runnable-context bank/restore state feeding `primeApolloKeyruptLeadInState()`, not just `QRUPT`

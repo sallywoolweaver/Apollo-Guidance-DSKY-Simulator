@@ -280,3 +280,5 @@ Those files are derived debugging artifacts, not Apollo artifacts.
     - `DXCH PUSHLOC` assembles as `52167`
     - `DCA MPAC` assembles as `30155`
   - the remaining ownership gap in that corridor is therefore deeper restore/select runnable-context semantics, not ordinary pair selection alone
+  - the latest routed keyrupt lead-in fix now seeds live interrupted `Q` before exact `KEYRUPT1`, matching the later `XCH Q / TS QRUPT` source sequence
+  - the remaining exact blocker ahead of that corridor is now the interrupted bank/runnable-context state feeding that lead-in, because the routed trace still shows `BANKRUPT = 00000` before the same later `TC 0177` dormant-core-set drop

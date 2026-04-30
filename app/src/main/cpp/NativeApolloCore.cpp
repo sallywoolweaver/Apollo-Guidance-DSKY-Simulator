@@ -55,10 +55,6 @@ void logExecutiveTracef(const char* format, ...) {
     logExecutiveTrace(buffer);
 }
 
-bool isSchedulerDispatchBoundaryLabel(const std::string& label) {
-    return label == "ADVAN" || label == "NUDIRECT" || label == "CHANJOB";
-}
-
 bool isExecutiveCompletionBoundaryLabel(const std::string& label) {
     return label == "ENDPRCHG" || label == "INTRSM" || label == "TASKOVER" || label == "ENDOFJOB";
 }
@@ -497,11 +493,14 @@ void NativeApolloCore::primeApolloKeyruptLeadInState() {
     const uint16_t interruptedReturnAddress = state.programCounterInErasable
         ? static_cast<uint16_t>(state.programCounterOffset & 07777)
         : fixedAddressForBankOffset(state.programCounterBank, state.programCounterOffset);
+    const uint16_t interruptedBbank = static_cast<uint16_t>(
+        (state.fbRegister & 076000) | ((state.ebRegister & 03400) >> 8)
+    );
     memoryImage_->writeErasableWord(kAruptAddress, state.accumulator);
     memoryImage_->writeErasableWord(kLruptAddress, state.lRegister);
     memoryImage_->writeErasableWord(kBruptAddress, interruptedReturnAddress);
     cpu_->setQRegister(interruptedReturnAddress);
-    cpu_->setAccumulator(state.bbRegister);
+    cpu_->setAccumulator(interruptedBbank);
 }
 
 bool NativeApolloCore::dispatchCapturedNovacRequest() {

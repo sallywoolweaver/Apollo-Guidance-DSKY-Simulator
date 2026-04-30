@@ -73,6 +73,9 @@
 
 ## Newly reduced this pass
 
+- compatibility-owned startup for binsource-backed images no longer uses the rope-label overlay's first debug label as the initial CPU entry point
+- `ProgramAssetLoader` now preserves the real binsource rope entry metadata instead of overriding startup with the first mapped overlay label
+
 - the old narrow native dispatch at the final `WAITLIST RESUME` opcode boundary is gone
 - the routed key path now gets a real `RESUME` instruction plus a longer post-`RESUME` Apollo execution window before any fallback dispatch is allowed
 - the routed key path now enters `KEYRUPT1` with a more honest rupture/return register setup instead of only a bank jump into the label
@@ -132,6 +135,11 @@ Reason:
 - The remaining blocker is still the lack of enough Apollo-owned Executive scheduling/job-switch/final interrupt-return/peripheral state to eliminate the fallback thresholds honestly.
 
 ## Remaining hard-coded technical debt
+
+- Path: compatibility-owned interrupted bank/runnable-context snapshot ahead of routed `KEYRUPT1`
+  - Why it exists: `CompatibilityScenario::resetFromBootstrap(...)` and `CompatibilityScenario::step(...)` still operate on a scenario-reset CPU state created by `AgcCpu::resetForScenario(...)`, which zeros `bbRegister`, `ebRegister`, and `fbRegister`
+  - Apollo-owned replacement target: a real Apollo-owned interrupted runnable context present before `NativeApolloCore::primeApolloKeyruptLeadInState()` runs, so `KEYRUPT1` can save a nonzero interrupted bank word into `BANKRUPT`
+  - Reduced this batch: partially; binsource-backed compatibility startup no longer begins from overlay label `KEYRUPT1`, but the remaining blocker is now earlier and sharper: `CompatibilityScenario::step(...)` plus `AgcCpu::step(...)` do not yet preserve a routed interruptible runnable context when started from the real Apollo rope entry, so the earlier routed trace corridor is no longer reached under device verification
 
 - Path: `NativeApolloCore::runInstructionRoutedApolloInput` late request trigger
   - Why it exists: the emulator still does not implement enough Apollo-owned Executive scheduler/job-switch aftermath to know purely from Apollo state when the pending request should be handed from the routed interrupt-return path into the job-dispatch path
@@ -259,3 +267,25 @@ Reason:
     - `DCA MPAC` assembles as `30155`
   - Reduced this batch: no runtime path removed
   - Narrowed this batch: yes; the remaining blocker is now pinned more precisely to incomplete `CHANJOB / ENDPRCHG / INTRSM` restore/select runnable-context semantics rather than ordinary pair selection alone
+
+- 2026-04-27 de-scaffolding audit
+  - Removed this batch:
+    - dead runtime helper `NativeApolloCore::isSchedulerDispatchBoundaryLabel()`
+  - Not yet removable:
+    - `DskyIo::pressKey` fallback entry buffering and command parsing
+    - `DskyIo` fallback `KEY REL` / `RSET` / alarm acknowledgement behavior
+    - `CompatibilityScenario` mission/telemetry/phase ownership
+    - the custom erasable/bootstrap assets
+    - the remaining `NativeApolloCore` handoff/continuation helpers around `dispatchPendingExecutiveRequest`, `continueInterpreterStallToNaturalTransfer`, `continueFinalTransitionToNaturalTransfer`, and the post-dispatch budget
+  - Why those native helpers still remain:
+    - they are still load-bearing until Apollo-owned `CHANJOB / ENDPRCHG / INTRSM` restore-dispatch semantics stop the routed path from falling through `TC 0177 -> dynamic core set 1 MODE -> 0223`
+
+- 2026-04-27 interrupted-bank hard blocker
+  - The routed `KEYRUPT1` bank-save problem is now proven to be upstream of `NativeApolloCore::primeApolloKeyruptLeadInState()`.
+  - Exact file/function/state chain:
+    - `CompatibilityScenario::resetFromBootstrap()`
+    - `AgcCpu::resetForScenario()`
+    - `CompatibilityScenario::step()`
+  - Those functions currently establish and advance a compatibility-owned CPU context with zero bank registers before routed `KEYRUPT1`, so the interrupt lead-in still has no Apollo-owned interrupted `BBANK` word to save into `BANKRUPT`.
+  - Reduced this batch: no
+  - Narrowed this batch: yes; the current bank-save blocker is no longer attributed only to `primeApolloKeyruptLeadInState()`
